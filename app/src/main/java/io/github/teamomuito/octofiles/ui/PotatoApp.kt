@@ -132,8 +132,8 @@ private fun Screens(vm: MainViewModel) {
     BackHandler(enabled = viewing != null) { viewing = null }
     BackHandler(enabled = swipeRoot != null) { swipeRoot = null }
 
-    // the cards get the whole screen while you're swiping through a month
-    val showBar = tab != TAB_SWIPE || swiping == null
+    // the cards get the whole screen while you're swiping through a month or through everything
+    val showBar = (tab != TAB_SWIPE || swiping == null) && swipeRoot == null
     val haze = remember { HazeState() }
 
     Box(Modifier.fillMaxSize()) {
