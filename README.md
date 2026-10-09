@@ -57,6 +57,10 @@ Needs JDK 17 and the Android SDK, which Android Studio sets up.
 ./gradlew testDebugUnitTest
 ```
 
+## Releases
+
+Pushing a tag like `v0.1.0` runs [`.github/workflows/release.yml`](.github/workflows/release.yml). It runs the unit tests, builds a release apk and attaches it to a GitHub release. Without signing secrets the apk is signed with the debug key. To sign with your own key, add the repo secrets `OCTO_KEYSTORE_B64` (base64 of the `.jks`), `OCTO_KEYSTORE_PASSWORD`, `OCTO_KEY_ALIAS` and `OCTO_KEY_PASSWORD`.
+
 ## License
 
 MIT, same as octo potato. Sniglet is under the SIL Open Font License, see [`licenses/`](licenses).
