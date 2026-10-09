@@ -161,9 +161,9 @@ fun <T> SwipeDeck(
                                 }
                             }
                         },
-                    keepStamp = { (motion.x.value / (width * CardMotion.THRESHOLD)).coerceIn(0f, 1f) },
-                    byeStamp = { (-motion.x.value / (width * CardMotion.THRESHOLD)).coerceIn(0f, 1f) },
-                    onClick = { onOpen(top) },
+                    { (motion.x.value / (width * CardMotion.THRESHOLD)).coerceIn(0f, 1f) },
+                    { (-motion.x.value / (width * CardMotion.THRESHOLD)).coerceIn(0f, 1f) },
+                    { onOpen(top) },
                 )
             }
         }
