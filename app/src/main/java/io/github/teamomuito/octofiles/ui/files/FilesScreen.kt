@@ -5,15 +5,20 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -64,7 +69,11 @@ import java.io.File
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.RectangleShape
+import io.github.teamomuito.octofiles.ui.theme.DsGlyph
+import io.github.teamomuito.octofiles.ui.theme.selectionBrackets
 
 /** Files copied or cut from the browser, waiting for a paste. */
 object FileClip {
@@ -375,15 +384,26 @@ private fun FileRow(
     onMore: () -> Unit,
 ) {
     val context = LocalContext.current
+    val rim = MaterialTheme.colorScheme.outlineVariant
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RectangleShape)
-            .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+            .background(if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
             .combinedClickable(onClick = onOpen, onLongClick = onSelect)
+            .then(if (selected) Modifier.selectionBrackets(MaterialTheme.colorScheme.onSurface) else Modifier)
+            .drawBehind { drawLine(rim, Offset(0f, size.height), Offset(size.width, size.height), strokeWidth = 1.dp.toPx()) }
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        Box(
+            Modifier
+                .size(40.dp)
+                .border(1.dp, MaterialTheme.colorScheme.onSurface),
+            contentAlignment = Alignment.Center,
+        ) {
+            DsGlyph(folder = item.isDir, modifier = Modifier.size(24.dp))
+        }
+        Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
                 if (item.isDir) "${item.name}/" else item.name,

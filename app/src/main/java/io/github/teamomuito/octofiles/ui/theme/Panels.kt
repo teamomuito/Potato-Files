@@ -2,6 +2,7 @@ package io.github.teamomuito.octofiles.ui.theme
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,10 +40,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
@@ -239,5 +243,52 @@ fun PanelCircle(
         onClick = onClick,
     ) {
         Icon(icon, contentDescription = description, tint = ink, modifier = Modifier.size(size * 0.42f))
+    }
+}
+
+/** Four corner brackets around a selected item, like the cursor on the DS menus. */
+fun Modifier.selectionBrackets(color: Color, arm: Dp = 10.dp, stroke: Dp = 2.dp): Modifier = drawWithContent {
+    drawContent()
+    val a = arm.toPx()
+    val s = stroke.toPx()
+    val half = s / 2
+    val w = size.width
+    val h = size.height
+    drawLine(color, Offset(half, half), Offset(a, half), strokeWidth = s)
+    drawLine(color, Offset(half, half), Offset(half, a), strokeWidth = s)
+    drawLine(color, Offset(w - half, half), Offset(w - a, half), strokeWidth = s)
+    drawLine(color, Offset(w - half, half), Offset(w - half, a), strokeWidth = s)
+    drawLine(color, Offset(half, h - half), Offset(a, h - half), strokeWidth = s)
+    drawLine(color, Offset(half, h - half), Offset(half, h - a), strokeWidth = s)
+    drawLine(color, Offset(w - half, h - half), Offset(w - a, h - half), strokeWidth = s)
+    drawLine(color, Offset(w - half, h - half), Offset(w - half, h - a), strokeWidth = s)
+}
+
+/** A folder or a file, drawn in outline like the DS icons. Drawn here so it needs no icon set. */
+@Composable
+fun DsGlyph(folder: Boolean, modifier: Modifier = Modifier) {
+    val ink = MaterialTheme.colorScheme.onSurface
+    Canvas(modifier) {
+        val w = size.width
+        val h = size.height
+        val s = 2.dp.toPx()
+        if (folder) {
+            drawRect(ink, Offset(w * 0.08f, h * 0.12f), Size(w * 0.36f, h * 0.16f), style = Stroke(s))
+            drawRect(ink, Offset(w * 0.08f, h * 0.24f), Size(w * 0.84f, h * 0.62f), style = Stroke(s))
+        } else {
+            val page = Path().apply {
+                moveTo(w * 0.22f, h * 0.10f)
+                lineTo(w * 0.62f, h * 0.10f)
+                lineTo(w * 0.80f, h * 0.28f)
+                lineTo(w * 0.80f, h * 0.90f)
+                lineTo(w * 0.22f, h * 0.90f)
+                close()
+            }
+            drawPath(page, ink, style = Stroke(s))
+            for (i in 0..2) {
+                val y = h * (0.44f + i * 0.14f)
+                drawLine(ink, Offset(w * 0.34f, y), Offset(w * 0.68f, y), strokeWidth = s)
+            }
+        }
     }
 }
