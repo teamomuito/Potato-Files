@@ -358,6 +358,7 @@ private fun toggle(selected: MutableList<String>, path: String) {
     if (path in selected) selected.remove(path) else selected.add(path)
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FileRow(
     item: FileItem,
