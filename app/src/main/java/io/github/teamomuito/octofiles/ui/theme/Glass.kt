@@ -135,17 +135,17 @@ fun GlassCard(
 private data class Blob(val color: Color, val x: Float, val y: Float, val radius: Float)
 
 private val lightBlobs = listOf(
-    Blob(Color(0xFFFFB8D6), 0.05f, 0.04f, 1.0f),
-    Blob(Color(0xFFD9CCFF), 1.05f, 0.34f, 0.9f),
-    Blob(Color(0xFFC6F2E3), -0.05f, 0.7f, 0.85f),
-    Blob(Color(0xFFFFDCC8), 0.95f, 1.0f, 0.85f),
+    Blob(Color(0xFFFFE08A), 0.05f, 0.04f, 1.0f),
+    Blob(Color(0xFFFFF1B8), 1.05f, 0.34f, 0.9f),
+    Blob(Color(0xFFFFD966), -0.05f, 0.7f, 0.85f),
+    Blob(Color(0xFFFFEBA8), 0.95f, 1.0f, 0.85f),
 )
 
 private val darkBlobs = listOf(
-    Blob(Color(0xFF6A2A4C), 0.05f, 0.04f, 1.0f),
-    Blob(Color(0xFF3B2B70), 1.05f, 0.34f, 0.9f),
-    Blob(Color(0xFF1C4A42), -0.05f, 0.7f, 0.85f),
-    Blob(Color(0xFF5B2350), 0.95f, 1.0f, 0.85f),
+    Blob(Color(0xFF6B5200), 0.05f, 0.04f, 1.0f),
+    Blob(Color(0xFF4A3A0C), 1.05f, 0.34f, 0.9f),
+    Blob(Color(0xFF5A4A10), -0.05f, 0.7f, 0.85f),
+    Blob(Color(0xFF7A5C0A), 0.95f, 1.0f, 0.85f),
 )
 
 /** Soft color blobs everything floats on. Static on purpose: nothing to redraw while scrolling. */

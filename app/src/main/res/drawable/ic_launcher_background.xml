@@ -11,28 +11,20 @@
                 android:type="linear"
                 android:startX="54" android:startY="0"
                 android:endX="54" android:endY="108"
-                android:startColor="#FFE9F3"
-                android:endColor="#FFC4DD" />
+                android:startColor="#FFF8D2"
+                android:endColor="#FFD84D" />
         </aapt:attr>
     </path>
     <path
         android:pathData="M22.8,30 a3.2,3.2 0 1,0 6.4,0 a3.2,3.2 0 1,0 -6.4,0 Z"
         android:fillColor="#FFFFFF"
-        android:fillAlpha="0.55" />
-    <path
-        android:pathData="M31.2,21 a1.8,1.8 0 1,0 3.6,0 a1.8,1.8 0 1,0 -3.6,0 Z"
-        android:fillColor="#FFFFFF"
-        android:fillAlpha="0.55" />
+        android:fillAlpha="0.6" />
     <path
         android:pathData="M81.4,80 a2.6,2.6 0 1,0 5.2,0 a2.6,2.6 0 1,0 -5.2,0 Z"
         android:fillColor="#FFFFFF"
-        android:fillAlpha="0.55" />
-    <path
-        android:pathData="M88.5,71 a1.5,1.5 0 1,0 3.0,0 a1.5,1.5 0 1,0 -3.0,0 Z"
-        android:fillColor="#FFFFFF"
-        android:fillAlpha="0.55" />
+        android:fillAlpha="0.6" />
     <path
         android:pathData="M76.6,25 a1.4,1.4 0 1,0 2.8,0 a1.4,1.4 0 1,0 -2.8,0 Z"
         android:fillColor="#FFFFFF"
-        android:fillAlpha="0.55" />
+        android:fillAlpha="0.6" />
 </vector>
