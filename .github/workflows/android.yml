@@ -99,9 +99,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          flags=()
-          if [[ "$TAG" == *-* ]]; then flags+=(--prerelease); fi
-          gh release create "$TAG" apk/potato-files-*-release.apk \
-            --title "Potato Files ${TAG}" \
-            --generate-notes \
-            "${flags[@]}"
+          apk=$(ls apk/potato-files-*-release.apk)
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            # re-running the workflow for an existing tag replaces the apk
+            gh release upload "$TAG" "$apk" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            flags=()
+            if [[ "$TAG" == *-* ]]; then flags+=(--prerelease); fi
+            gh release create "$TAG" "$apk" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Potato Files ${TAG}" \
+              --generate-notes \
+              "${flags[@]}"
+          fi
