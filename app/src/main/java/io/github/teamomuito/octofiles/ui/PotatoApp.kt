@@ -54,8 +54,8 @@ import io.github.teamomuito.octofiles.ui.files.ViewerScreen
 import java.io.File
 import io.github.teamomuito.octofiles.data.Shot
 import io.github.teamomuito.octofiles.ui.theme.BAR_SPACE
-import io.github.teamomuito.octofiles.ui.theme.PixelBackground
-import io.github.teamomuito.octofiles.ui.theme.PixelTabBar
+import io.github.teamomuito.octofiles.ui.theme.GridBackground
+import io.github.teamomuito.octofiles.ui.theme.DsTabBar
 import io.github.teamomuito.octofiles.ui.theme.LocalBarSpace
 import io.github.teamomuito.octofiles.ui.theme.TabItem
 import kotlinx.coroutines.launch
@@ -135,7 +135,7 @@ private fun Screens(vm: MainViewModel) {
 
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize()) {
-            PixelBackground()
+            GridBackground()
             CompositionLocalProvider(LocalBarSpace provides if (showBar) BAR_SPACE else 0.dp) {
                 when (tab) {
                     TAB_FILES -> FilesScreen(
@@ -165,7 +165,7 @@ private fun Screens(vm: MainViewModel) {
             exit = slideOutVertically { it } + fadeOut(),
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
-            PixelTabBar(
+            DsTabBar(
                 tabs = TABS,
                 selected = tab,
                 onSelect = { tab = it },

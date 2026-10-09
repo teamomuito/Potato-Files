@@ -68,7 +68,7 @@ import java.time.format.DateTimeFormatter
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import io.github.teamomuito.octofiles.ui.theme.pixelCorners
+import androidx.compose.ui.graphics.RectangleShape
 
 enum class Tool(val title: String, val blurb: String) {
     ANALYZER("storage analyzer", "what's taking the space, and what you haven't opened in ages"),
@@ -109,7 +109,7 @@ fun ToolsScreen(onSwipeAll: () -> Unit, onSettings: () -> Unit) {
                 Column(
                     Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surfaceVariant, pixelCorners(20.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RectangleShape)
                         .padding(16.dp)
                 ) {
                     TextButton(onClick = { tool = entry }) { Text(entry.title) }
@@ -257,7 +257,7 @@ private fun DuplicatesTool() {
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant, pixelCorners(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant, RectangleShape)
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {

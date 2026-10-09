@@ -46,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -60,7 +61,6 @@ import io.github.teamomuito.octofiles.ui.theme.LocalPanel
 import io.github.teamomuito.octofiles.ui.theme.Pastel
 import io.github.teamomuito.octofiles.ui.theme.bottomSpace
 import io.github.teamomuito.octofiles.ui.theme.panel
-import io.github.teamomuito.octofiles.ui.theme.pixelCorners
 
 @Composable
 fun HomeScreen(
@@ -145,7 +145,7 @@ private fun Header(progress: Progress?, onSettings: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 4.dp)
-                .clip(pixelCorners(50.dp)),
+                .clip(RectangleShape),
         )
     }
 }
@@ -170,7 +170,7 @@ private fun SearchBox(query: String, onChange: (String) -> Unit) {
             { IconButton(onClick = { onChange("") }) { Icon(Icons.Rounded.Close, contentDescription = "clear") } }
         },
         singleLine = true,
-        shape = pixelCorners(50.dp),
+        shape = RectangleShape,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }),
         colors = OutlinedTextFieldDefaults.colors(
@@ -197,7 +197,7 @@ private fun FilterRow(selected: Filter, showSoon: Boolean, onPick: (Filter) -> U
                 selected = f == selected,
                 onClick = { onPick(f) },
                 label = { Text(f.label) },
-                shape = pixelCorners(50.dp),
+                shape = RectangleShape,
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = panel.fill,
                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
@@ -230,8 +230,8 @@ private fun ShotGrid(shots: List<Shot>, tidy: TidySettings, onOpen: (Shot) -> Un
             Box(
                 Modifier
                     .aspectRatio(0.6f)
-                    .clip(pixelCorners(18.dp))
-                    .border(2.dp, panel.rim, pixelCorners(18.dp))
+                    .clip(RectangleShape)
+                    .border(1.dp, panel.rim, RectangleShape)
                     .clickable { onOpen(shot) },
             ) {
                 Thumbnail(shot.uri, Modifier.fillMaxSize())
@@ -264,7 +264,7 @@ private fun ResultList(shots: List<Shot>, onOpen: (Shot) -> Unit) {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .panel(pixelCorners(22.dp), panel)
+                    .panel(RectangleShape, panel)
                     .clickable { onOpen(shot) }
                     .padding(10.dp),
             ) {
@@ -272,7 +272,7 @@ private fun ResultList(shots: List<Shot>, onOpen: (Shot) -> Unit) {
                     shot.uri,
                     Modifier
                         .size(width = 64.dp, height = 108.dp)
-                        .clip(pixelCorners(14.dp)),
+                        .clip(RectangleShape),
                 )
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {

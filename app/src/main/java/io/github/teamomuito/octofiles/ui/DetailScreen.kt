@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
@@ -48,9 +49,8 @@ import io.github.teamomuito.octofiles.data.Kind
 import io.github.teamomuito.octofiles.data.Shot
 import io.github.teamomuito.octofiles.data.TidySettings
 import io.github.teamomuito.octofiles.ui.theme.PanelCard
-import io.github.teamomuito.octofiles.ui.theme.PixelBackground
+import io.github.teamomuito.octofiles.ui.theme.GridBackground
 import io.github.teamomuito.octofiles.ui.theme.LocalPanel
-import io.github.teamomuito.octofiles.ui.theme.pixelCorners
 
 @Composable
 fun DetailScreen(id: Long, vm: MainViewModel, onBack: () -> Unit, onTrash: (Shot) -> Unit) {
@@ -58,7 +58,7 @@ fun DetailScreen(id: Long, vm: MainViewModel, onBack: () -> Unit, onTrash: (Shot
     val tidy by vm.tidy.collectAsStateWithLifecycle()
 
     Box(Modifier.fillMaxSize()) {
-        PixelBackground()
+        GridBackground()
         Column(
             Modifier
                 .fillMaxSize()
@@ -91,8 +91,8 @@ private fun DetailBody(detail: Detail, tidy: TidySettings, vm: MainViewModel, on
         shot.uri,
         Modifier
             .padding(horizontal = 16.dp)
-            .clip(pixelCorners(24.dp))
-            .border(2.dp, LocalPanel.current.rim, pixelCorners(24.dp))
+            .clip(RectangleShape)
+            .border(1.dp, LocalPanel.current.rim, RectangleShape)
             .clickable { openInGallery(context, shot.uri) },
     )
 
@@ -127,7 +127,7 @@ private fun DetailBody(detail: Detail, tidy: TidySettings, vm: MainViewModel, on
         }
     }
     PanelCard(
-        shape = pixelCorners(22.dp),
+        shape = RectangleShape,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp),
@@ -159,7 +159,7 @@ private fun TemporaryCard(shot: Shot, tidy: TidySettings, onKeep: (Boolean) -> U
         }
     }
     PanelCard(
-        shape = pixelCorners(22.dp),
+        shape = RectangleShape,
         tint = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = if (LocalPanel.current.dark) 0.45f else 0.7f),
         modifier = Modifier
             .fillMaxWidth()
