@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -44,7 +45,6 @@ import androidx.compose.ui.unit.dp
 import io.github.teamomuito.octofiles.ui.theme.PanelCircle
 import io.github.teamomuito.octofiles.ui.theme.LocalPanel
 import io.github.teamomuito.octofiles.ui.theme.Pastel
-import io.github.teamomuito.octofiles.ui.theme.pixelCorners
 import kotlin.math.abs
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -196,13 +196,13 @@ fun SwipeCard(
     onClick: () -> Unit,
     picture: @Composable BoxScope.() -> Unit,
 ) {
-    val shape = pixelCorners(28.dp)
+    val shape = RectangleShape
     Box(
         modifier
             .shadow(10.dp, shape)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(2.dp, LocalPanel.current.rim, shape)
+            .border(1.dp, LocalPanel.current.rim, shape)
             .clickable(onClick = onClick),
     ) {
         picture()
@@ -250,8 +250,8 @@ private fun Stamp(text: String, color: Color, modifier: Modifier) {
         style = MaterialTheme.typography.headlineMedium,
         color = color,
         modifier = modifier
-            .background(Color.White.copy(alpha = 0.85f), pixelCorners(14.dp))
-            .border(BorderStroke(3.dp, color), pixelCorners(14.dp))
+            .background(Color.White.copy(alpha = 0.85f), RectangleShape)
+            .border(BorderStroke(3.dp, color), RectangleShape)
             .padding(horizontal = 14.dp, vertical = 4.dp),
     )
 }

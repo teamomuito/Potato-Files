@@ -42,7 +42,7 @@ import io.github.teamomuito.octofiles.files.Trash
 import io.github.teamomuito.octofiles.ui.SwipeCard
 import io.github.teamomuito.octofiles.ui.SwipeDeck
 import io.github.teamomuito.octofiles.ui.formatBytes
-import io.github.teamomuito.octofiles.ui.theme.PixelBackground
+import io.github.teamomuito.octofiles.ui.theme.GridBackground
 import io.github.teamomuito.octofiles.ui.whenTaken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -127,7 +127,7 @@ fun SwipeAllScreen(root: File, onClose: () -> Unit) {
 
     // the same backdrop and full-height deck as the swipe tab. Opaque, so the file list behind doesn't show through
     Box(Modifier.fillMaxSize()) {
-        PixelBackground()
+        GridBackground()
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = onClose) { Text("back") }

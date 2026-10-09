@@ -44,6 +44,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -55,8 +56,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import io.github.teamomuito.octofiles.BuildConfig
 import io.github.teamomuito.octofiles.ui.theme.PanelCard
-import io.github.teamomuito.octofiles.ui.theme.PixelBackground
-import io.github.teamomuito.octofiles.ui.theme.pixelCorners
+import io.github.teamomuito.octofiles.ui.theme.GridBackground
 
 @Composable
 fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
@@ -71,7 +71,7 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
 
     Box(Modifier.fillMaxSize()) {
-        PixelBackground()
+        GridBackground()
         Column(
             Modifier
                 .fillMaxSize()
@@ -113,7 +113,7 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                                 selected = tidy.days == days,
                                 onClick = { vm.updateTidy { it.copy(days = days) } },
                                 label = { Text(label) },
-                                shape = pixelCorners(50.dp),
+                                shape = RectangleShape,
                             )
                         }
                     }

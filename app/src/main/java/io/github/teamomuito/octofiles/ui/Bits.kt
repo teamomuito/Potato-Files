@@ -41,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -63,7 +64,6 @@ import io.github.teamomuito.octofiles.ui.theme.PanelCard
 import io.github.teamomuito.octofiles.ui.theme.LocalPanel
 import io.github.teamomuito.octofiles.ui.theme.Pastel
 import io.github.teamomuito.octofiles.ui.theme.bottomSpace
-import io.github.teamomuito.octofiles.ui.theme.pixelCorners
 import kotlin.math.sqrt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -112,7 +112,7 @@ fun Pill(text: String, background: Color, ink: Color, modifier: Modifier = Modif
         style = MaterialTheme.typography.labelSmall,
         maxLines = 1,
         modifier = modifier
-            .background(background, pixelCorners(50.dp))
+            .background(background, RectangleShape)
             .padding(horizontal = 8.dp, vertical = 3.dp),
     )
 }

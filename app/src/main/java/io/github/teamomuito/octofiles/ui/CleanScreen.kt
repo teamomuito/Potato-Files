@@ -60,6 +60,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.state.ToggleableState
@@ -79,7 +80,6 @@ import io.github.teamomuito.octofiles.data.JunkKind
 import io.github.teamomuito.octofiles.ui.theme.PanelCard
 import io.github.teamomuito.octofiles.ui.theme.LocalPanel
 import io.github.teamomuito.octofiles.ui.theme.bottomSpace
-import io.github.teamomuito.octofiles.ui.theme.pixelCorners
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -278,7 +278,7 @@ fun CleanScreen(vm: CleanViewModel, onSettings: () -> Unit) {
                         .align(Alignment.BottomCenter)
                         .padding(bottom = bottomSpace() + 4.dp, start = 24.dp, end = 24.dp)
                         .fillMaxWidth()
-                        .shadow(12.dp, pixelCorners(50.dp)),
+                        .shadow(12.dp, RectangleShape),
                 ) {
                     if (working) {
                         CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
@@ -367,7 +367,7 @@ private fun Scanning(files: Int) {
             trackColor = MaterialTheme.colorScheme.primaryContainer,
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(pixelCorners(50.dp)),
+                .clip(RectangleShape),
         )
     }
 }
@@ -385,7 +385,7 @@ private fun SectionHeader(title: String, body: String, size: String, open: Boole
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(pixelCorners(16.dp))
+            .clip(RectangleShape)
             .clickable(onClick = onOpen),
     ) {
         leading()
@@ -638,7 +638,7 @@ private fun AppRow(app: AppUsage, detail: String, onClick: (() -> Unit)? = null,
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(pixelCorners(14.dp))
+            .clip(RectangleShape)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(vertical = 6.dp),
     ) {
@@ -664,7 +664,7 @@ private fun AppIcon(pkg: String, modifier: Modifier) {
             }
         }
     }
-    Box(modifier.clip(pixelCorners(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) {
+    Box(modifier.clip(RectangleShape).background(MaterialTheme.colorScheme.surfaceVariant)) {
         icon?.let { Image(it, contentDescription = null, modifier = Modifier.fillMaxSize()) }
     }
 }

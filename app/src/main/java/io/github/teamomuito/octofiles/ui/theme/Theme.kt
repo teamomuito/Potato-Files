@@ -1,6 +1,7 @@
 package io.github.teamomuito.octofiles.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -19,77 +20,77 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.teamomuito.octofiles.R
 
-// the DS palette: a sky-blue top screen, navy ink, and the bright pen colors
+// the DS menus: a pale grid, steel-blue bars, and white windows with thin grey edges
 private val Light = lightColorScheme(
-    primary = Color(0xFF2B7BD9),
+    primary = Color(0xFF3D74B5),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFCBEBFF),
-    onPrimaryContainer = Color(0xFF0B3B73),
-    secondary = Color(0xFFF2862B),
+    primaryContainer = Color(0xFFCFE2F4),
+    onPrimaryContainer = Color(0xFF173B63),
+    secondary = Color(0xFFD9719F),
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFFFE3C4),
-    onSecondaryContainer = Color(0xFF5C2D00),
-    tertiary = Color(0xFF2FAA4F),
+    secondaryContainer = Color(0xFFFBDDEC),
+    onSecondaryContainer = Color(0xFF5E1C40),
+    tertiary = Color(0xFF3C9E4E),
     onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFD2F6D6),
-    onTertiaryContainer = Color(0xFF0C3F1B),
-    background = Color(0xFFBDE7FA),
-    onBackground = Color(0xFF1C3F7A),
-    surface = Color(0xFFF2FBFF),
-    onSurface = Color(0xFF1C3F7A),
-    surfaceVariant = Color(0xFFD7F0FC),
-    onSurfaceVariant = Color(0xFF3F6A9E),
+    tertiaryContainer = Color(0xFFD8F0DA),
+    onTertiaryContainer = Color(0xFF0F4220),
+    background = Color(0xFFDCEAF5),
+    onBackground = Color(0xFF1F3550),
+    surface = Color.White,
+    onSurface = Color(0xFF1F3550),
+    surfaceVariant = Color(0xFFE4EEF7),
+    onSurfaceVariant = Color(0xFF4D6480),
     surfaceContainerLowest = Color.White,
-    surfaceContainerLow = Color(0xFFF4FCFF),
-    surfaceContainer = Color(0xFFE7F7FD),
-    surfaceContainerHigh = Color(0xFFDAF2FC),
-    surfaceContainerHighest = Color(0xFFCBEBF9),
-    outline = Color(0xFF3F6A9E),
-    outlineVariant = Color(0xFF9ACDEB),
+    surfaceContainerLow = Color(0xFFF5F9FC),
+    surfaceContainer = Color(0xFFEEF4FA),
+    surfaceContainerHigh = Color(0xFFE4EDF6),
+    surfaceContainerHighest = Color(0xFFD8E4F0),
+    outline = Color(0xFF7F93A8),
+    outlineVariant = Color(0xFFBCCBDB),
 )
 
-// the same screen at night: deep navy with the dots turned down
+// the same screens at night: the grid goes dark and the windows go slate
 private val Dark = darkColorScheme(
-    primary = Color(0xFF6DB8FF),
-    onPrimary = Color(0xFF0A2A55),
-    primaryContainer = Color(0xFF1E5CA6),
-    onPrimaryContainer = Color(0xFFCBEBFF),
-    secondary = Color(0xFFFFB36B),
-    onSecondary = Color(0xFF4A2400),
-    secondaryContainer = Color(0xFF6B3A12),
-    onSecondaryContainer = Color(0xFFFFE3C4),
-    tertiary = Color(0xFF6FE08F),
-    onTertiary = Color(0xFF0A3A1B),
-    tertiaryContainer = Color(0xFF1F5B31),
-    onTertiaryContainer = Color(0xFFD2F6D6),
-    background = Color(0xFF0F2A55),
-    onBackground = Color(0xFFD6EEFF),
-    surface = Color(0xFF163766),
-    onSurface = Color(0xFFD6EEFF),
-    surfaceVariant = Color(0xFF1F4A80),
-    onSurfaceVariant = Color(0xFF9CCBEE),
-    surfaceContainerLowest = Color(0xFF0B2147),
-    surfaceContainerLow = Color(0xFF123060),
-    surfaceContainer = Color(0xFF173A6E),
-    surfaceContainerHigh = Color(0xFF1D4480),
-    surfaceContainerHighest = Color(0xFF245292),
-    outline = Color(0xFF5C8FC7),
-    outlineVariant = Color(0xFF2C5A94),
+    primary = Color(0xFF7FB2E8),
+    onPrimary = Color(0xFF0E2740),
+    primaryContainer = Color(0xFF2D5F94),
+    onPrimaryContainer = Color(0xFFD6E8FA),
+    secondary = Color(0xFFF0A0C8),
+    onSecondary = Color(0xFF4A1A33),
+    secondaryContainer = Color(0xFF6B2D52),
+    onSecondaryContainer = Color(0xFFFBDDEC),
+    tertiary = Color(0xFF7FD091),
+    onTertiary = Color(0xFF0E3A18),
+    tertiaryContainer = Color(0xFF2A5C36),
+    onTertiaryContainer = Color(0xFFD8F0DA),
+    background = Color(0xFF17263A),
+    onBackground = Color(0xFFDCE8F5),
+    surface = Color(0xFF213349),
+    onSurface = Color(0xFFDCE8F5),
+    surfaceVariant = Color(0xFF2B4060),
+    onSurfaceVariant = Color(0xFFA9BED6),
+    surfaceContainerLowest = Color(0xFF15212F),
+    surfaceContainerLow = Color(0xFF1C2D42),
+    surfaceContainer = Color(0xFF223751),
+    surfaceContainerHigh = Color(0xFF2A4262),
+    surfaceContainerHighest = Color(0xFF334E73),
+    outline = Color(0xFF6C84A0),
+    outlineVariant = Color(0xFF3A5070),
 )
 
-/** Colors for the little kind labels. Bright like the DS pen colors, they sit on top of screenshots. */
+/** Colors for the little kind labels. Soft, like the calendar tiles on the DS home screen. */
 object Pastel {
-    val pink = Color(0xFFFFC9E6)
-    val pinkInk = Color(0xFF8A1E5A)
-    val sky = Color(0xFFBFE6FF)
-    val skyInk = Color(0xFF0E4D8A)
-    val mint = Color(0xFFC6F4C9)
-    val mintInk = Color(0xFF17652B)
-    val butter = Color(0xFFFFF2A0)
+    val pink = Color(0xFFF6D3E8)
+    val pinkInk = Color(0xFF7A2352)
+    val sky = Color(0xFFCFE5F8)
+    val skyInk = Color(0xFF1E4E7E)
+    val mint = Color(0xFFD2F0D8)
+    val mintInk = Color(0xFF1F6B35)
+    val butter = Color(0xFFFBEDB0)
     val butterInk = Color(0xFF6B5300)
 }
 
-/** Pixelify Sans, the pixel face the DS menus are drawn in. One variable file, two weights. */
+/** Pixelify Sans, for headings only. One variable file, two weights. */
 @OptIn(ExperimentalTextApi::class)
 val PixelFont = FontFamily(
     Font(R.font.pixelify_sans, FontWeight.Normal, variationSettings = FontVariation.Settings(FontVariation.weight(400))),
@@ -98,27 +99,28 @@ val PixelFont = FontFamily(
 
 private val base = Typography()
 
-// pixel type runs small, so the body sizes sit a little bigger than the stock ones
+// headings get the pixel face, everything you read stays in the plain sans
 private val OctoType = Typography(
     displaySmall = base.displaySmall.copy(fontFamily = PixelFont, fontWeight = FontWeight.Bold),
     headlineMedium = base.headlineMedium.copy(fontFamily = PixelFont, fontWeight = FontWeight.Bold),
     headlineSmall = base.headlineSmall.copy(fontFamily = PixelFont, fontWeight = FontWeight.Bold),
     titleLarge = base.titleLarge.copy(fontFamily = PixelFont, fontWeight = FontWeight.Bold),
-    titleMedium = base.titleMedium.copy(fontFamily = PixelFont, fontWeight = FontWeight.Normal, fontSize = 18.sp),
-    bodyLarge = base.bodyLarge.copy(fontFamily = PixelFont, fontSize = 18.sp),
-    bodyMedium = base.bodyMedium.copy(fontFamily = PixelFont, fontSize = 16.sp),
-    bodySmall = base.bodySmall.copy(fontFamily = PixelFont, fontSize = 14.sp),
-    labelLarge = base.labelLarge.copy(fontFamily = PixelFont, fontWeight = FontWeight.Normal, fontSize = 16.sp),
-    labelMedium = base.labelMedium.copy(fontFamily = PixelFont, fontWeight = FontWeight.Normal, fontSize = 13.sp),
-    labelSmall = base.labelSmall.copy(fontFamily = PixelFont, fontWeight = FontWeight.Normal, fontSize = 12.sp),
+    titleMedium = base.titleMedium.copy(fontWeight = FontWeight.Medium, fontSize = 16.sp),
+    bodyLarge = base.bodyLarge.copy(fontSize = 16.sp),
+    bodyMedium = base.bodyMedium.copy(fontSize = 14.sp),
+    bodySmall = base.bodySmall.copy(fontSize = 12.sp),
+    labelLarge = base.labelLarge.copy(fontWeight = FontWeight.Medium, fontSize = 14.sp),
+    labelMedium = base.labelMedium.copy(fontSize = 12.sp),
+    labelSmall = base.labelSmall.copy(fontSize = 11.sp),
 )
 
+// square everywhere: the DS windows have no rounded corners
 private val OctoShapes = Shapes(
-    extraSmall = pixelCorners(6.dp),
-    small = pixelCorners(10.dp),
-    medium = pixelCorners(16.dp),
-    large = pixelCorners(22.dp),
-    extraLarge = pixelCorners(28.dp),
+    extraSmall = RoundedCornerShape(0.dp),
+    small = RoundedCornerShape(0.dp),
+    medium = RoundedCornerShape(0.dp),
+    large = RoundedCornerShape(0.dp),
+    extraLarge = RoundedCornerShape(0.dp),
 )
 
 @Composable

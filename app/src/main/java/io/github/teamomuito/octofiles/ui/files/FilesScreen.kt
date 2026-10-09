@@ -64,7 +64,7 @@ import java.io.File
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import io.github.teamomuito.octofiles.ui.theme.pixelCorners
+import androidx.compose.ui.graphics.RectangleShape
 
 /** Files copied or cut from the browser, waiting for a paste. */
 object FileClip {
@@ -199,7 +199,7 @@ fun FilesScreen(onOpenText: (File) -> Unit, onSwipe: (File) -> Unit, onSettings:
                         Column(
                             Modifier
                                 .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.secondaryContainer, pixelCorners(16.dp))
+                                .background(MaterialTheme.colorScheme.secondaryContainer, RectangleShape)
                                 .padding(14.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
@@ -378,7 +378,7 @@ private fun FileRow(
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(pixelCorners(16.dp))
+            .clip(RectangleShape)
             .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
             .combinedClickable(onClick = onOpen, onLongClick = onSelect)
             .padding(horizontal = 12.dp, vertical = 10.dp),

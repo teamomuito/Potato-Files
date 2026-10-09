@@ -61,6 +61,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -76,7 +77,6 @@ import io.github.teamomuito.octofiles.ui.theme.LocalPanel
 import io.github.teamomuito.octofiles.ui.theme.Pastel
 import io.github.teamomuito.octofiles.ui.theme.bottomSpace
 import io.github.teamomuito.octofiles.ui.theme.panel
-import io.github.teamomuito.octofiles.ui.theme.pixelCorners
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -224,7 +224,7 @@ private fun MonthRow(month: MonthSummary, onClick: () -> Unit) {
     }.joinToString(" · ")
 
     PanelCard(
-        shape = pixelCorners(22.dp),
+        shape = RectangleShape,
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -239,7 +239,7 @@ private fun MonthRow(month: MonthSummary, onClick: () -> Unit) {
                         trackColor = MaterialTheme.colorScheme.primaryContainer,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(pixelCorners(50.dp)),
+                            .clip(RectangleShape),
                     )
                 }
             }
@@ -321,7 +321,7 @@ private fun MarkedChip(bytes: Long, count: Int, onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .panel(pixelCorners(50.dp), LocalPanel.current, MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f))
+            .panel(RectangleShape, LocalPanel.current, MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
@@ -437,8 +437,8 @@ private fun ReviewPile(
                     Box(
                         Modifier
                             .aspectRatio(0.8f)
-                            .clip(pixelCorners(16.dp))
-                            .border(2.dp, LocalPanel.current.rim, pixelCorners(16.dp))
+                            .clip(RectangleShape)
+                            .border(1.dp, LocalPanel.current.rim, RectangleShape)
                             .clickable { onRescue(entry) },
                     ) {
                         Thumbnail(Uri.parse(entry.uri), Modifier.fillMaxSize(), alignment = Alignment.Center)
