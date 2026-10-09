@@ -1,4 +1,4 @@
-# octo files
+# potato files
 
 A file manager for Android that also carries over everything from [octo potato](https://github.com/teamomuito/octo-potato): screenshot text search, swipe cleanup, deep clean, and the one-week tidy for throwaway screenshots. Everything runs on the phone. There's no account and no server.
 
