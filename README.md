@@ -45,7 +45,8 @@ Tools → wi-fi server starts a read-only HTTP server on port 8080 for shared st
 
 - **All files access** (needed to browse). Requested from the files tab.
 - **Media access**, **notifications**, **usage stats** and **media management** (screenshot and deep-clean features, inherited).
-- **Internet**: only for the wi-fi server, which listens only while you start it.
+- **Internet**: for the wi-fi server, which listens only while you start it, and for "check for updates" in settings. That's one request for the latest release on github, with nothing about your phone sent along.
+- **Accessibility** (optional): lets the one-by-one cache clean tap Storage and Clear cache on each app's page, for phones that leave out Android's clear-all screen. It's off until you turn it on in accessibility settings, it only acts during that walk, and it never taps Clear storage.
 - **Biometrics**: unlocks the vault.
 
 ## Build

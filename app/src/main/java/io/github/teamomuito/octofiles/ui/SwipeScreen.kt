@@ -10,18 +10,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,11 +42,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -62,23 +55,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -89,7 +73,6 @@ import io.github.teamomuito.octofiles.data.MediaEntry
 import io.github.teamomuito.octofiles.data.MonthSummary
 import io.github.teamomuito.octofiles.data.MonthView
 import io.github.teamomuito.octofiles.ui.theme.GlassCard
-import io.github.teamomuito.octofiles.ui.theme.GlassCircle
 import io.github.teamomuito.octofiles.ui.theme.LocalGlass
 import io.github.teamomuito.octofiles.ui.theme.Pastel
 import io.github.teamomuito.octofiles.ui.theme.bottomSpace
@@ -97,8 +80,6 @@ import io.github.teamomuito.octofiles.ui.theme.glass
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import kotlin.math.abs
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
@@ -318,13 +299,16 @@ private fun MonthDeck(vm: SwipeViewModel, month: YearMonth, delete: (List<MediaE
                 onDelete = { delete(current.marked) },
                 onLeave = { if (current.deck.isEmpty()) vm.close() else vm.reviewing.value = false },
             )
-            else -> CardStack(
+            else -> SwipeDeck(
                 deck = current.deck,
+                keyOf = { it.id },
                 canUndo = canUndo,
                 onDecide = vm::decide,
                 onUndo = vm::undo,
                 onOpen = { openInGallery(context, Uri.parse(it.uri), it.isVideo) },
-            )
+            ) { entry, modifier, keepStamp, byeStamp, onClick ->
+                MediaCard(entry, modifier, keepStamp, byeStamp, onClick)
+            }
         }
     }
 }
@@ -356,144 +340,26 @@ private fun MarkedChip(bytes: Long, count: Int, onClick: () -> Unit) {
     }
 }
 
-/** Where the top card is. Kept outside the card so the one underneath can react to it. */
-private class CardMotion {
-    val x = Animatable(0f)
-    val y = Animatable(0f)
-    var leaving = false
-
-    /** 0 while resting, 1 once it's far enough to count as a swipe. */
-    fun progress(width: Float) = (abs(x.value) / (width * THRESHOLD)).coerceIn(0f, 1f)
-
-    suspend fun flyOut(keep: Boolean, width: Float) = coroutineScope {
-        launch { y.animateTo(y.value + 80f, tween(230)) }
-        x.animateTo(if (keep) width * 1.6f else -width * 1.6f, tween(230))
-    }
-
-    suspend fun settle() = coroutineScope {
-        launch { y.animateTo(0f, spring(dampingRatio = 0.55f)) }
-        x.animateTo(0f, spring(dampingRatio = 0.55f))
-    }
-
-    companion object {
-        const val THRESHOLD = 0.3f
-    }
-}
-
-@Composable
-private fun CardStack(
-    deck: List<MediaEntry>,
-    canUndo: Boolean,
-    onDecide: (MediaEntry, Boolean) -> Unit,
-    onUndo: () -> Unit,
-    onOpen: (MediaEntry) -> Unit,
-) {
-    val scope = rememberCoroutineScope()
-    val haptics = LocalHapticFeedback.current
-    val top = deck.first()
-    val motion = remember(top.id) { CardMotion() }
-    var width by remember { mutableFloatStateOf(1f) }
-
-    fun decide(keep: Boolean) {
-        if (motion.leaving) return
-        motion.leaving = true
-        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-        scope.launch {
-            motion.flyOut(keep, width)
-            onDecide(top, keep)
-        }
-    }
-
-    Column(Modifier.fillMaxSize()) {
-        Box(
-            Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 10.dp)
-                .onSizeChanged { width = it.width.toFloat() },
-        ) {
-            deck.getOrNull(1)?.let { next ->
-                key(next.id) {
-                    MediaCard(
-                        next,
-                        Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                val grow = 0.93f + 0.07f * motion.progress(width)
-                                scaleX = grow
-                                scaleY = grow
-                            },
-                    )
-                }
-            }
-            key(top.id) {
-                MediaCard(
-                    top,
-                    Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            translationX = motion.x.value
-                            translationY = motion.y.value
-                            rotationZ = motion.x.value / 45f
-                        }
-                        .pointerInput(top.id) {
-                            detectDragGestures(
-                                onDragEnd = {
-                                    val limit = width * CardMotion.THRESHOLD
-                                    when {
-                                        motion.x.value > limit -> decide(keep = true)
-                                        motion.x.value < -limit -> decide(keep = false)
-                                        else -> scope.launch { motion.settle() }
-                                    }
-                                },
-                                onDragCancel = { scope.launch { motion.settle() } },
-                            ) { change, drag ->
-                                change.consume()
-                                scope.launch {
-                                    motion.x.snapTo(motion.x.value + drag.x)
-                                    motion.y.snapTo(motion.y.value + drag.y)
-                                }
-                            }
-                        },
-                    keepStamp = { (motion.x.value / (width * CardMotion.THRESHOLD)).coerceIn(0f, 1f) },
-                    byeStamp = { (-motion.x.value / (width * CardMotion.THRESHOLD)).coerceIn(0f, 1f) },
-                    onClick = { onOpen(top) },
-                )
-            }
-        }
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(22.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 6.dp, bottom = 16.dp),
-        ) {
-            GlassCircle(Icons.Rounded.Close, "delete", Color(0xFFFFD6E7), Color(0xFFB0265F), 68.dp) { decide(keep = false) }
-            GlassCircle(Icons.Rounded.Refresh, "undo", Color.White, MaterialTheme.colorScheme.onSurfaceVariant, 48.dp, enabled = canUndo, onClick = onUndo)
-            GlassCircle(Icons.Rounded.Favorite, "keep", Pastel.mint, Pastel.mintInk, 68.dp) { decide(keep = true) }
-        }
-    }
-}
-
 @Composable
 private fun MediaCard(
     entry: MediaEntry,
     modifier: Modifier,
-    keepStamp: () -> Float = { 0f },
-    byeStamp: () -> Float = { 0f },
-    onClick: () -> Unit = {},
+    keepStamp: () -> Float,
+    byeStamp: () -> Float,
+    onClick: () -> Unit,
 ) {
     val context = LocalContext.current
     val uri = remember(entry.uri) { Uri.parse(entry.uri) }
-    val shape = RoundedCornerShape(28.dp)
-    Box(
-        modifier
-            .shadow(10.dp, shape)
-            .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(1.5.dp, LocalGlass.current.rim, shape)
-            .clickable(onClick = onClick),
+    SwipeCard(
+        modifier = modifier,
+        title = DateUtils.formatDateTime(context, entry.taken, DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_YEAR).lowercase(),
+        details = buildList {
+            if (entry.isVideo && entry.durationMs > 0) add(duration(entry.durationMs))
+            add(formatBytes(context, entry.size))
+        }.joinToString(" · "),
+        keepStamp = keepStamp,
+        byeStamp = byeStamp,
+        onClick = onClick,
     ) {
         Thumbnail(uri, Modifier.fillMaxSize(), big = true, alignment = Alignment.Center)
 
@@ -509,62 +375,7 @@ private fun MediaCard(
                     .padding(12.dp),
             )
         }
-
-        Column(
-            Modifier
-                .align(Alignment.BottomStart)
-                .fillMaxWidth()
-                .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))))
-                .padding(start = 20.dp, end = 20.dp, top = 36.dp, bottom = 18.dp),
-        ) {
-            Text(
-                DateUtils.formatDateTime(context, entry.taken, DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_YEAR).lowercase(),
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White,
-            )
-            val details = buildList {
-                if (entry.isVideo && entry.durationMs > 0) add(duration(entry.durationMs))
-                add(formatBytes(context, entry.size))
-            }.joinToString(" · ")
-            Text(details, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.85f))
-        }
-
-        Stamp(
-            "keep",
-            Pastel.mintInk,
-            Modifier
-                .align(Alignment.TopStart)
-                .padding(24.dp)
-                .graphicsLayer {
-                    alpha = keepStamp()
-                    rotationZ = -14f
-                },
-        )
-        Stamp(
-            "bye",
-            Color(0xFFB0265F),
-            Modifier
-                .align(Alignment.TopEnd)
-                .padding(24.dp)
-                .graphicsLayer {
-                    alpha = byeStamp()
-                    rotationZ = 14f
-                },
-        )
     }
-}
-
-@Composable
-private fun Stamp(text: String, color: Color, modifier: Modifier) {
-    Text(
-        text,
-        style = MaterialTheme.typography.headlineMedium,
-        color = color,
-        modifier = modifier
-            .background(Color.White.copy(alpha = 0.85f), RoundedCornerShape(14.dp))
-            .border(BorderStroke(3.dp, color), RoundedCornerShape(14.dp))
-            .padding(horizontal = 14.dp, vertical = 4.dp),
-    )
 }
 
 /** The "marked for deletion" pile. Tap one to rescue it, or send them all off in one go. */

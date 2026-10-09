@@ -2,30 +2,23 @@ package io.github.teamomuito.octofiles.ui.files
 
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -35,39 +28,31 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import io.github.teamomuito.octofiles.files.FileItem
 import io.github.teamomuito.octofiles.files.FileKind
 import io.github.teamomuito.octofiles.files.FilesDb
 import io.github.teamomuito.octofiles.files.Fs
+import io.github.teamomuito.octofiles.files.Opener
 import io.github.teamomuito.octofiles.files.Trash
+import io.github.teamomuito.octofiles.ui.SwipeCard
+import io.github.teamomuito.octofiles.ui.SwipeDeck
 import io.github.teamomuito.octofiles.ui.formatBytes
+import io.github.teamomuito.octofiles.ui.theme.LiquidBackground
 import io.github.teamomuito.octofiles.ui.whenTaken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import kotlin.math.roundToInt
-
-private const val SWIPE_THRESHOLD = 180f
 
 /**
  * Tinder-style cleanup for every file under [root], not just photos. Oldest first.
- * Swipe right to keep, left to bin. Binned files wait in a pile until you confirm,
- * then they go to our trash. Buttons do the same for anyone who doesn't want to drag.
+ * Same deck as the swipe tab: swipe right to keep, left to bin. Binned files wait in a pile
+ * until you confirm, then they go to our trash.
  */
 @Composable
 fun SwipeAllScreen(root: File, onClose: () -> Unit) {
@@ -80,7 +65,6 @@ fun SwipeAllScreen(root: File, onClose: () -> Unit) {
     var kept by remember { mutableIntStateOf(0) }
     val bin = remember { mutableStateListOf<FileItem>() }
     val history = remember { mutableStateListOf<Pair<Int, String>>() }
-    var dragX by remember { mutableFloatStateOf(0f) }
     var reviewing by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<String?>(null) }
 
@@ -107,7 +91,6 @@ fun SwipeAllScreen(root: File, onClose: () -> Unit) {
         }
         history += (index to (if (keep) "keep" else "bin"))
         index++
-        dragX = 0f
     }
 
     fun undo() {
@@ -123,7 +106,6 @@ fun SwipeAllScreen(root: File, onClose: () -> Unit) {
             bin.remove(item)
         }
         index = i
-        dragX = 0f
     }
 
     fun emptyBin() {
@@ -143,88 +125,53 @@ fun SwipeAllScreen(root: File, onClose: () -> Unit) {
         }
     }
 
-    Column(Modifier.fillMaxSize().statusBarsPadding().padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onClose) { Text("back") }
-            Text(
-                "swipe ${root.name.ifEmpty { "storage" }}",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(start = 4.dp),
-            )
-        }
+    // the same backdrop and full-height deck as the swipe tab. Opaque, so the file list behind doesn't show through
+    Box(Modifier.fillMaxSize()) {
+        LiquidBackground()
+        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onClose) { Text("back") }
+                Text(
+                    "swipe ${root.name.ifEmpty { "storage" }}",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(start = 4.dp),
+                )
+            }
 
-        val list = queue
-        when {
-            list == null -> Text("looking through your files…", modifier = Modifier.padding(top = 24.dp))
-            reviewing -> BinReview(
-                bin = bin.toList(),
-                onRescue = { item -> bin.remove(item) },
-                onEmpty = { emptyBin() },
-                onBack = { reviewing = false },
-            )
-            index >= list.size -> Finished(
-                kept = kept,
-                binned = bin.size,
-                result = result,
-                onReview = { reviewing = true },
-                onEmpty = { emptyBin() },
-                onClose = onClose,
-            )
-            else -> {
-                val item = list[index]
-                Text(
-                    "${index + 1} of ${list.size} · kept $kept · bin pile ${bin.size}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp),
+            val list = queue
+            when {
+                list == null -> Text("looking through your files…", modifier = Modifier.padding(top = 24.dp))
+                reviewing -> BinReview(
+                    bin = bin.toList(),
+                    onRescue = { item -> bin.remove(item) },
+                    onEmpty = { emptyBin() },
+                    onBack = { reviewing = false },
                 )
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    SwipeCard(
-                        item = item,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxSize()
-                            .offset { IntOffset(dragX.roundToInt(), 0) }
-                            .graphicsLayer { rotationZ = dragX / 40f }
-                            .pointerInput(index) {
-                                detectDragGestures(
-                                    onDragEnd = {
-                                        when {
-                                            dragX > SWIPE_THRESHOLD -> decide(true)
-                                            dragX < -SWIPE_THRESHOLD -> decide(false)
-                                            else -> { dragX = 0f }
-                                        }
-                                    },
-                                    onDragCancel = { dragX = 0f },
-                                ) { change, drag ->
-                                    change.consume()
-                                    dragX += drag.x
-                                }
-                            },
+                index >= list.size -> Finished(
+                    kept = kept,
+                    binned = bin.size,
+                    result = result,
+                    onReview = { reviewing = true },
+                    onEmpty = { emptyBin() },
+                    onClose = onClose,
+                )
+                else -> {
+                    Text(
+                        "${index + 1} of ${list.size} · kept $kept · bin pile ${bin.size}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp),
                     )
-                }
-                Text(
-                    "swipe right to keep, left to bin. Buttons work too.",
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .padding(top = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    OutlinedButton(onClick = { decide(false) }, modifier = Modifier.weight(1f)) { Text("bin") }
-                    OutlinedButton(onClick = { undo() }, enabled = history.isNotEmpty()) { Text("undo") }
-                    Button(onClick = { decide(true) }, modifier = Modifier.weight(1f)) { Text("keep") }
+                    SwipeDeck(
+                        deck = list.subList(index, list.size),
+                        keyOf = { it.path },
+                        canUndo = history.isNotEmpty(),
+                        onDecide = { _, keep -> decide(keep) },
+                        onUndo = { undo() },
+                        onOpen = { Opener.open(context, it.file) },
+                    ) { item, modifier, keepStamp, byeStamp, onClick ->
+                        FileCard(item, modifier, keepStamp, byeStamp, onClick)
+                    }
                 }
             }
         }
@@ -232,37 +179,43 @@ fun SwipeAllScreen(root: File, onClose: () -> Unit) {
 }
 
 @Composable
-private fun SwipeCard(item: FileItem, modifier: Modifier) {
+private fun FileCard(
+    item: FileItem,
+    modifier: Modifier,
+    keepStamp: () -> Float,
+    byeStamp: () -> Float,
+    onClick: () -> Unit,
+) {
     val context = LocalContext.current
     val preview by produceState<ImageBitmap?>(initialValue = null, item.path) {
         value = if (item.kind == FileKind.IMAGE) {
-            withContext(Dispatchers.IO) { decodeSample(item.file, 900) }
+            withContext(Dispatchers.IO) { decodeSample(item.file, 1080) }
         } else {
             null
         }
     }
-    Surface(
-        modifier = modifier.clip(RoundedCornerShape(28.dp)),
-        color = MaterialTheme.colorScheme.surfaceVariant,
+    SwipeCard(
+        modifier = modifier,
+        title = item.name,
+        details = "${formatBytes(context, item.size)} · ${whenTaken(item.modified)}",
+        keepStamp = keepStamp,
+        byeStamp = byeStamp,
+        onClick = onClick,
     ) {
-        Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            preview?.let { bitmap ->
-                Image(
-                    bitmap = bitmap,
-                    contentDescription = item.name,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                )
-            } ?: Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                Text(item.kind.label, style = MaterialTheme.typography.displaySmall)
-            }
-            Text(item.name, style = MaterialTheme.typography.titleMedium, maxLines = 2)
-            Text(
-                "${formatBytes(context, item.size)} · ${whenTaken(item.modified)}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+        val bitmap = preview
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap,
+                contentDescription = item.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
             )
-            Text(item.file.parent.orEmpty(), style = MaterialTheme.typography.bodySmall, maxLines = 1)
+        } else {
+            Text(
+                item.kind.label,
+                style = MaterialTheme.typography.displaySmall,
+                modifier = Modifier.align(Alignment.Center),
+            )
         }
     }
 }
