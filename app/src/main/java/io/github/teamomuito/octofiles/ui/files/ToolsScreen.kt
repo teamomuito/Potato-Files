@@ -53,6 +53,7 @@ import io.github.teamomuito.octofiles.files.VaultRow
 import io.github.teamomuito.octofiles.files.Rule
 import io.github.teamomuito.octofiles.files.TrashRow
 import io.github.teamomuito.octofiles.files.SecureDelete
+import io.github.teamomuito.octofiles.ui.SettingsButton
 import io.github.teamomuito.octofiles.ui.formatBytes
 import io.github.teamomuito.octofiles.ui.whenTaken
 import io.github.teamomuito.octofiles.ui.theme.bottomSpace
@@ -99,9 +100,7 @@ fun ToolsScreen(onSwipeAll: () -> Unit, onSettings: () -> Unit) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("tools", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
-                        IconButton(onClick = onSettings) {
-                            Icon(Icons.Rounded.Settings, contentDescription = "settings")
-                        }
+                        SettingsButton(onClick = onSettings)
                     }
                     Button(onClick = onSwipeAll, modifier = Modifier.fillMaxWidth()) { Text("swipe through everything") }
                 }

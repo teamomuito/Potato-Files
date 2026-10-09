@@ -54,6 +54,7 @@ import io.github.teamomuito.octofiles.files.SecureDelete
 import io.github.teamomuito.octofiles.files.SortBy
 import io.github.teamomuito.octofiles.files.Trash
 import io.github.teamomuito.octofiles.files.Vault
+import io.github.teamomuito.octofiles.ui.SettingsButton
 import io.github.teamomuito.octofiles.ui.formatBytes
 import io.github.teamomuito.octofiles.ui.whenTaken
 import io.github.teamomuito.octofiles.ui.theme.bottomSpace
@@ -187,9 +188,7 @@ fun FilesScreen(onOpenText: (File) -> Unit, onSwipe: (File) -> Unit, onSettings:
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("files", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
-                        IconButton(onClick = onSettings) {
-                            Icon(Icons.Rounded.Settings, contentDescription = "settings")
-                        }
+                        SettingsButton(onClick = onSettings)
                     }
                     Text(
                         "${formatBytes(context, space.first)} free of ${formatBytes(context, space.second)}",
