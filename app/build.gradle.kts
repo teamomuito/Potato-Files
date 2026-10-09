@@ -26,15 +26,20 @@ android {
     }
 
     signingConfigs {
-        // CI passes these in from repo secrets. Without them the release apk
-        // falls back to the debug key, which is fine for trying it out.
+        // the release key is committed (signing/potato-release.jks), so every release is signed
+        // the same way and each one installs over the last. OCTO_KEYSTORE, if set, overrides it.
         create("release") {
-            val path = System.getenv("OCTO_KEYSTORE")
-            if (!path.isNullOrBlank() && file(path).exists()) {
-                storeFile = file(path)
+            val override = System.getenv("OCTO_KEYSTORE")
+            if (!override.isNullOrBlank() && file(override).exists()) {
+                storeFile = file(override)
                 storePassword = System.getenv("OCTO_KEYSTORE_PASSWORD")
                 keyAlias = System.getenv("OCTO_KEY_ALIAS")
                 keyPassword = System.getenv("OCTO_KEY_PASSWORD")
+            } else {
+                storeFile = rootProject.file("signing/potato-release.jks")
+                storePassword = "4b2b07015bdd485d4614c7baec4c17a5"
+                keyAlias = "potato"
+                keyPassword = "4b2b07015bdd485d4614c7baec4c17a5"
             }
         }
     }
@@ -44,8 +49,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            val release = signingConfigs.getByName("release")
-            signingConfig = if (release.storeFile != null) release else signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

@@ -71,12 +71,7 @@ git push origin v0.1.0
 
 The tag build is signed with the release key and published as a GitHub release with the release APK attached. Tags with a `-` (like `v0.2.0-beta`) are marked as pre-releases. The version code is the workflow run number, so each release installs over the previous one.
 
-Repo secrets needed for signing (Settings → Secrets and variables → Actions):
-
-- `OCTO_KEYSTORE_BASE64`: the keystore file, base64-encoded (`base64 -w0 release.jks`)
-- `OCTO_KEYSTORE_PASSWORD`, `OCTO_KEY_ALIAS`, `OCTO_KEY_PASSWORD`
-
-Keep the keystore backed up somewhere safe. If it's lost, existing installs can't be updated.
+Releases are signed with the key in `signing/potato-release.jks`, which is committed on purpose. Every release uses the same key, so each one installs over the last. Anyone with the key can sign an APK that installs as an update to Potato Files, so only download releases from this repo.
 
 ## License
 
