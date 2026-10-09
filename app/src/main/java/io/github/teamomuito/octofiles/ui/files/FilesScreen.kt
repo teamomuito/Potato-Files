@@ -54,6 +54,7 @@ import io.github.teamomuito.octofiles.files.SecureDelete
 import io.github.teamomuito.octofiles.files.SortBy
 import io.github.teamomuito.octofiles.files.Trash
 import io.github.teamomuito.octofiles.files.Vault
+import io.github.teamomuito.octofiles.ui.SettingsButton
 import io.github.teamomuito.octofiles.ui.formatBytes
 import io.github.teamomuito.octofiles.ui.whenTaken
 import io.github.teamomuito.octofiles.ui.theme.bottomSpace
@@ -61,6 +62,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 
 /** Files copied or cut from the browser, waiting for a paste. */
 object FileClip {
@@ -81,7 +85,7 @@ private sealed interface Pending {
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FilesScreen(onOpenText: (File) -> Unit, onSwipe: (File) -> Unit) {
+fun FilesScreen(onOpenText: (File) -> Unit, onSwipe: (File) -> Unit, onSettings: () -> Unit) {
     val context = LocalContext.current
     val db = remember { FilesDb.get(context) }
     val scope = rememberCoroutineScope()
@@ -182,7 +186,10 @@ fun FilesScreen(onOpenText: (File) -> Unit, onSwipe: (File) -> Unit) {
         ) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("files", style = MaterialTheme.typography.headlineMedium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("files", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
+                        SettingsButton(onClick = onSettings)
+                    }
                     Text(
                         "${formatBytes(context, space.first)} free of ${formatBytes(context, space.second)}",
                         style = MaterialTheme.typography.bodySmall,
