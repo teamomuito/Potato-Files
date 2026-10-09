@@ -87,15 +87,16 @@ jobs:
     permissions:
       contents: write
     steps:
+      # checkout first: it clears the workspace, which would delete the downloaded apks
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - name: Download APKs
         uses: actions/download-artifact@v4
         with:
           name: potato-files-apks
           path: apk
-
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
 
       - name: Pick the release tag
         run: |
