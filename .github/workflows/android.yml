@@ -51,6 +51,11 @@ jobs:
           printf '%s' "$OCTO_KEYSTORE_B64" | base64 -d > "$keystore"
           echo "OCTO_KEYSTORE=$keystore" >> "$GITHUB_ENV"
 
+      - name: Debug key fingerprint
+        run: |
+          ls -la ~/.android/ 2>/dev/null || echo "no ~/.android yet"
+          keytool -list -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey 2>/dev/null | grep "SHA256" || echo "no debug keystore before build"
+
       - name: Unit tests
         run: ./gradlew --stacktrace testDebugUnitTest
 
