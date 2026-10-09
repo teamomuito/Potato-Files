@@ -14,8 +14,10 @@ android {
         applicationId = "io.github.teamomuito.octofiles"
         minSdk = 30
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        // CI passes -PversionCode (the run number, so every build installs over the last)
+        // and -PversionName (the tag, for releases).
+        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 1
+        versionName = (project.findProperty("versionName") as String?) ?: "0.1.0"
 
         // phones are all ARM; the Intel builds of ML Kit's native code were a third of the apk
         ndk {
