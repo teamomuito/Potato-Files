@@ -1,0 +1,230 @@
+package io.github.teamomuito.octofiles.ui
+
+import android.app.Activity
+import android.provider.MediaStore
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
+import io.github.teamomuito.octofiles.data.Access
+import io.github.teamomuito.octofiles.files.Fs
+import io.github.teamomuito.octofiles.ui.files.FilesScreen
+import io.github.teamomuito.octofiles.ui.files.SwipeAllScreen
+import io.github.teamomuito.octofiles.ui.files.ToolsScreen
+import io.github.teamomuito.octofiles.ui.files.ViewerScreen
+import java.io.File
+import io.github.teamomuito.octofiles.data.Shot
+import io.github.teamomuito.octofiles.ui.theme.BAR_SPACE
+import io.github.teamomuito.octofiles.ui.theme.GlassTabBar
+import io.github.teamomuito.octofiles.ui.theme.LiquidBackground
+import io.github.teamomuito.octofiles.ui.theme.LocalBarSpace
+import io.github.teamomuito.octofiles.ui.theme.TabItem
+import kotlinx.coroutines.launch
+
+@Composable
+fun PotatoApp(vm: MainViewModel) {
+    val access by vm.access.collectAsStateWithLifecycle()
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
+
+    if (access == Access.Level.NONE) {
+        WelcomeScreen(onAnswered = vm::refresh)
+    } else {
+        Screens(vm)
+    }
+}
+
+@Composable
+private fun Screens(vm: MainViewModel) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbar = remember { SnackbarHostState() }
+    var openId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var settingsOpen by rememberSaveable { mutableStateOf(false) }
+
+    // Moving other apps' files to the trash always goes through a system request.
+    // With "media management" access it's approved on the spot, otherwise Android asks first.
+    var trashing by remember { mutableStateOf<List<Long>>(emptyList()) }
+    val trashLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+        val ids = trashing
+        trashing = emptyList()
+        if (result.resultCode == Activity.RESULT_OK && ids.isNotEmpty()) {
+            vm.forget(ids)
+            if (openId?.let { it in ids } == true) openId = null
+            val message = if (ids.size == 1) "moved to the trash" else "moved ${ids.size} screenshots to the trash"
+            scope.launch { snackbar.showSnackbar(message) }
+        }
+    }
+    val trash: (List<Shot>) -> Unit = { shots ->
+        if (shots.isNotEmpty() && trashing.isEmpty()) {
+            trashing = shots.map { it.id }
+            runCatching {
+                val pending = MediaStore.createTrashRequest(context.contentResolver, shots.map { it.uri }, true)
+                trashLauncher.launch(IntentSenderRequest.Builder(pending).build())
+            }.onFailure { trashing = emptyList() }
+        }
+    }
+
+    val due by vm.due.collectAsStateWithLifecycle()
+    val tidyAsked by vm.tidyAsked.collectAsStateWithLifecycle()
+    val silent by vm.canTidySilently.collectAsStateWithLifecycle()
+    var tidiedOnOpen by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(due, tidyAsked, silent) {
+        if (due.isEmpty()) return@LaunchedEffect
+        if (tidyAsked || (silent && !tidiedOnOpen)) {
+            vm.tidyAsked.value = false
+            tidiedOnOpen = true
+            trash(due)
+        }
+    }
+
+    val swipe: SwipeViewModel = viewModel()
+    val clean: CleanViewModel = viewModel()
+    val swiping by swipe.openMonth.collectAsStateWithLifecycle()
+    var tab by rememberSaveable { mutableIntStateOf(TAB_FILES) }
+    // full-screen file overlays: the text viewer and the swipe-through-everything deck
+    var viewing by rememberSaveable { mutableStateOf<String?>(null) }
+    var swipeRoot by rememberSaveable { mutableStateOf<String?>(null) }
+
+    BackHandler(enabled = tab != TAB_FILES && !settingsOpen && openId == null && viewing == null && swipeRoot == null) { tab = TAB_FILES }
+    BackHandler(enabled = settingsOpen && openId == null) { settingsOpen = false }
+    BackHandler(enabled = openId != null) { openId = null }
+    BackHandler(enabled = viewing != null) { viewing = null }
+    BackHandler(enabled = swipeRoot != null) { swipeRoot = null }
+
+    // the cards get the whole screen while you're swiping through a month
+    val showBar = tab != TAB_SWIPE || swiping == null
+    val haze = remember { HazeState() }
+
+    Box(Modifier.fillMaxSize()) {
+        // everything the frosted tab bar can see through
+        Box(
+            Modifier
+                .fillMaxSize()
+                .hazeSource(haze),
+        ) {
+            LiquidBackground()
+            CompositionLocalProvider(LocalBarSpace provides if (showBar) BAR_SPACE else 0.dp) {
+                when (tab) {
+                    TAB_FILES -> FilesScreen(
+                        onOpenText = { viewing = it.absolutePath },
+                        onSwipe = { swipeRoot = it.absolutePath },
+                    )
+                    TAB_SCREENSHOTS -> HomeScreen(
+                        vm = vm,
+                        due = due,
+                        onOpen = { openId = it.id },
+                        onSettings = { settingsOpen = true },
+                        onTidy = { trash(due) },
+                    )
+                    TAB_SWIPE -> SwipeScreen(swipe, onSettings = { settingsOpen = true })
+                    TAB_CLEAN -> CleanScreen(clean, onSettings = { settingsOpen = true })
+                    else -> ToolsScreen(onSwipeAll = { swipeRoot = Fs.storage.absolutePath })
+                }
+            }
+        }
+        AnimatedVisibility(
+            visible = showBar,
+            enter = slideInVertically { it } + fadeIn(),
+            exit = slideOutVertically { it } + fadeOut(),
+            modifier = Modifier.align(Alignment.BottomCenter),
+        ) {
+            GlassTabBar(
+                tabs = TABS,
+                selected = tab,
+                onSelect = { tab = it },
+                haze = haze,
+            )
+        }
+        AnimatedVisibility(
+            visible = settingsOpen,
+            enter = slideInHorizontally { it / 3 } + fadeIn(),
+            exit = slideOutHorizontally { it / 3 } + fadeOut(),
+        ) {
+            SettingsScreen(vm, onBack = { settingsOpen = false })
+        }
+        AnimatedContent(
+            targetState = openId,
+            transitionSpec = { (slideInHorizontally { it / 3 } + fadeIn()) togetherWith (slideOutHorizontally { it / 3 } + fadeOut()) },
+            modifier = Modifier.fillMaxSize(),
+            label = "detail",
+        ) { id ->
+            if (id != null) {
+                DetailScreen(id, vm, onBack = { openId = null }, onTrash = { trash(listOf(it)) })
+            }
+        }
+        AnimatedVisibility(
+            visible = viewing != null,
+            enter = slideInHorizontally { it / 3 } + fadeIn(),
+            exit = slideOutHorizontally { it / 3 } + fadeOut(),
+        ) {
+            viewing?.let { path -> ViewerScreen(File(path), onBack = { viewing = null }) }
+        }
+        AnimatedVisibility(
+            visible = swipeRoot != null,
+            enter = slideInVertically { it / 4 } + fadeIn(),
+            exit = slideOutVertically { it / 4 } + fadeOut(),
+        ) {
+            swipeRoot?.let { path -> SwipeAllScreen(File(path), onClose = { swipeRoot = null }) }
+        }
+        SnackbarHost(
+            hostState = snackbar,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = BAR_SPACE),
+        )
+    }
+}
+
+private const val TAB_FILES = 0
+private const val TAB_SCREENSHOTS = 1
+private const val TAB_SWIPE = 2
+private const val TAB_CLEAN = 3
+private const val TAB_TOOLS = 4
+
+private val TABS = listOf(
+    TabItem("files", Icons.Rounded.Share),
+    TabItem("screenshots", Icons.Rounded.Search),
+    TabItem("swipe", Icons.Rounded.Favorite),
+    TabItem("clean", Icons.Rounded.Delete),
+    TabItem("tools", Icons.Rounded.Settings),
+)
