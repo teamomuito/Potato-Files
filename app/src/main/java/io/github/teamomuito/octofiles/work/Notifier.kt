@@ -33,7 +33,7 @@ object Notifier {
         val title = if (count == 1) "1 old screenshot to tidy" else "$count old screenshots to tidy"
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_potato)
-            .setColor(0xFFE8508F.toInt())
+            .setColor(0xFFE0A100.toInt())
             .setContentTitle(title)
             .setContentText("Old qr codes, boarding passes and login codes. Tap and Potato sweeps them into the trash.")
             .setContentIntent(tap)

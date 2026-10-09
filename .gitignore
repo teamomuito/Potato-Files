@@ -12,3 +12,5 @@ build/
 # signing keys never go in the repo
 *.jks
 *.keystore
+# the one release key that is committed on purpose, see app/build.gradle.kts
+!/signing/potato-release.jks

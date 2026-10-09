@@ -175,7 +175,7 @@ fun <T> SwipeDeck(
                 .fillMaxWidth()
                 .padding(top = 6.dp, bottom = 16.dp),
         ) {
-            GlassCircle(Icons.Rounded.Close, "delete", Color(0xFFFFD6E7), Color(0xFFB0265F), 68.dp) { decide(keep = false) }
+            GlassCircle(Icons.Rounded.Close, "delete", Color(0xFFFFE9A6), Color(0xFF8A5A00), 68.dp) { decide(keep = false) }
             GlassCircle(Icons.Rounded.Refresh, "undo", Color.White, MaterialTheme.colorScheme.onSurfaceVariant, 48.dp, enabled = canUndo, onClick = onUndo)
             GlassCircle(Icons.Rounded.Favorite, "keep", Pastel.mint, Pastel.mintInk, 68.dp) { decide(keep = true) }
         }
@@ -231,7 +231,7 @@ fun SwipeCard(
         )
         Stamp(
             "bye",
-            Color(0xFFB0265F),
+            Color(0xFFB26A00),
             Modifier
                 .align(Alignment.TopEnd)
                 .padding(24.dp)
