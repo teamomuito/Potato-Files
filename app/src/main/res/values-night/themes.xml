@@ -1,5 +1,5 @@
 <resources>
     <style name="Theme.OctoFiles" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">@color/plum_night</item>
+        <item name="android:windowBackground">@color/night_blue</item>
     </style>
 </resources>

@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.AlertDialog
@@ -69,6 +68,7 @@ import java.time.format.DateTimeFormatter
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import io.github.teamomuito.octofiles.ui.theme.pixelCorners
 
 enum class Tool(val title: String, val blurb: String) {
     ANALYZER("storage analyzer", "what's taking the space, and what you haven't opened in ages"),
@@ -109,7 +109,7 @@ fun ToolsScreen(onSwipeAll: () -> Unit, onSettings: () -> Unit) {
                 Column(
                     Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(20.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant, pixelCorners(20.dp))
                         .padding(16.dp)
                 ) {
                     TextButton(onClick = { tool = entry }) { Text(entry.title) }
@@ -257,7 +257,7 @@ private fun DuplicatesTool() {
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant, pixelCorners(16.dp))
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {

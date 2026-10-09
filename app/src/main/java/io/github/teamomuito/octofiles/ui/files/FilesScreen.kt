@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -65,6 +64,7 @@ import java.io.File
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import io.github.teamomuito.octofiles.ui.theme.pixelCorners
 
 /** Files copied or cut from the browser, waiting for a paste. */
 object FileClip {
@@ -199,7 +199,7 @@ fun FilesScreen(onOpenText: (File) -> Unit, onSwipe: (File) -> Unit, onSettings:
                         Column(
                             Modifier
                                 .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.secondaryContainer, pixelCorners(16.dp))
                                 .padding(14.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
@@ -378,7 +378,7 @@ private fun FileRow(
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(pixelCorners(16.dp))
             .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
             .combinedClickable(onClick = onOpen, onLongClick = onSelect)
             .padding(horizontal = 12.dp, vertical = 10.dp),
