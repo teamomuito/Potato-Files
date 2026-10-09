@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -36,7 +37,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
@@ -53,9 +56,9 @@ data class Panel(
     val dark: Boolean,
 )
 
-val LightPanel = Panel(fill = Color.White, rim = Color(0xFF7F93A8), dark = false)
+val LightPanel = Panel(fill = Color(0xFFF8F8F8), rim = Color(0xFF0C0E0D), dark = false)
 
-val DarkPanel = Panel(fill = Color(0xFF213349), rim = Color(0xFF4A6384), dark = true)
+val DarkPanel = Panel(fill = Color(0xFF3A4449), rim = Color(0xFF0E1416), dark = true)
 
 val LocalPanel = staticCompositionLocalOf { LightPanel }
 
@@ -110,7 +113,7 @@ fun PanelCard(
 fun GridBackground(modifier: Modifier = Modifier) {
     val panel = LocalPanel.current
     val base = MaterialTheme.colorScheme.background
-    val line = if (panel.dark) Color(0xFF203750) else Color(0xFFCADDEE)
+    val line = if (panel.dark) Color(0xFF353C41) else Color(0xFFB4B6B5)
     Box(
         modifier
             .fillMaxSize()
@@ -138,19 +141,59 @@ fun GridBackground(modifier: Modifier = Modifier) {
 data class TabItem(val label: String, val icon: ImageVector)
 
 /**
- * The bottom bar, like the DS's bottom screen footer: a steel-blue strip along the bottom edge,
- * one flat cell per tab, and the selected cell lit.
+ * The title strip across the top, like the DS's header bar. It takes the status bar itself,
+ * so screens below it don't pad for the status bar a second time.
+ */
+@Composable
+fun DsHeader(title: String, modifier: Modifier = Modifier) {
+    val dark = LocalPanel.current.dark
+    val ink = if (dark) Color(0xFFE6EEF2) else Color(0xFF00131A)
+    val edge = if (dark) Color(0xFF0E1416) else Color(0xFF797979)
+    val fill = Brush.verticalGradient(
+        if (dark) listOf(Color(0xFF4A5C68), Color(0xFF34434D)) else listOf(Color(0xFFC2D6DF), Color(0xFFA2B9C1)),
+    )
+    Box(
+        modifier
+            .fillMaxWidth()
+            .background(fill)
+            .statusBarsPadding()
+            .height(HEADER_HEIGHT)
+            .drawWithContent {
+                drawContent()
+                drawLine(edge, Offset(0f, size.height), Offset(size.width, size.height), strokeWidth = 1.dp.toPx())
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(title, style = MaterialTheme.typography.titleMedium, color = ink)
+    }
+}
+
+/**
+ * The bottom bar, like the DS's footer: a steel-blue gradient with a dark top edge, one flat
+ * cell per tab, and the selected cell lit.
  */
 @Composable
 fun DsTabBar(tabs: List<TabItem>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
     val dark = LocalPanel.current.dark
-    val bar = if (dark) Color(0xFF1E3350) else Color(0xFF4A78AD)
-    val lit = if (dark) Color(0xFF3A5E8C) else Color(0xFF7FA6D1)
-    Box(modifier.fillMaxWidth().background(bar).navigationBarsPadding()) {
+    val edge = if (dark) Color(0xFF0A1820) else Color(0xFF00111B)
+    val bar = Brush.verticalGradient(
+        if (dark) listOf(Color(0xFF3A5E74), Color(0xFF26404F)) else listOf(Color(0xFF4D7D94), Color(0xFFC3D4DC)),
+    )
+    val lit = Color(0x4000131A)
+    Box(
+        modifier
+            .fillMaxWidth()
+            .background(bar)
+            .navigationBarsPadding()
+            .drawWithContent {
+                drawContent()
+                drawLine(edge, Offset(0f, 0f), Offset(size.width, 0f), strokeWidth = 1.dp.toPx())
+            },
+    ) {
         Row(Modifier.fillMaxWidth().height(BAR_HEIGHT)) {
             tabs.forEachIndexed { i, tab ->
                 val on = i == selected
-                val tint = if (on) Color.White else Color(0xFFD2E2F3)
+                val tint = Color.White
                 Squishy(
                     modifier = Modifier
                         .weight(1f)
@@ -171,6 +214,9 @@ fun DsTabBar(tabs: List<TabItem>, selected: Int, onSelect: (Int) -> Unit, modifi
 /** Height of the bottom bar, and the room lists keep clear of it. */
 val BAR_HEIGHT = 56.dp
 val BAR_SPACE = BAR_HEIGHT + 8.dp
+
+/** The title strip, not counting the status bar. */
+val HEADER_HEIGHT = 48.dp
 
 /** A round button, for the swipe card controls. */
 @Composable
