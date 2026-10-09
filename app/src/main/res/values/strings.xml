@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Potato Files</string>
+    <string name="clear_assist_description">Taps Storage and then Clear cache on each app\'s page, during the one-by-one cache clean. It acts only then, never clears app data, and never reads anything outside the Settings app.</string>
 </resources>

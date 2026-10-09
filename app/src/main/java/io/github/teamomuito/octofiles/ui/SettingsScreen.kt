@@ -1,6 +1,8 @@
 package io.github.teamomuito.octofiles.ui
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +47,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.teamomuito.octofiles.data.Updates
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import io.github.teamomuito.octofiles.BuildConfig
 import io.github.teamomuito.octofiles.ui.theme.GlassCard
 import io.github.teamomuito.octofiles.ui.theme.LiquidBackground
@@ -57,6 +64,8 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
     val skipTrash by vm.skipTrash.collectAsStateWithLifecycle()
     val askNotify = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refresh() }
     var rereadStarted by remember { mutableStateOf(false) }
+    var update by remember { mutableStateOf<UpdateState>(UpdateState.Idle) }
+    val scope = rememberCoroutineScope()
 
     Box(Modifier.fillMaxSize()) {
         LiquidBackground()
@@ -183,6 +192,44 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                 ) { Text("start over") }
             }
 
+            Section {
+                Text("updates", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    when (val s = update) {
+                        UpdateState.Idle -> "checks github for a newer release. it's just a request for the release list, nothing about this phone goes along."
+                        UpdateState.Checking -> "checking…"
+                        UpdateState.Current -> "you have the newest one."
+                        UpdateState.Failed -> "couldn't check. no network, or no release has been published yet."
+                        is UpdateState.Available -> "version ${s.release.version} is out."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(10.dp))
+                val available = update as? UpdateState.Available
+                if (available != null) {
+                    FilledTonalButton(onClick = {
+                        val url = available.release.apkUrl ?: available.release.page
+                        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+                    }) { Text("download") }
+                } else {
+                    OutlinedButton(
+                        enabled = update != UpdateState.Checking,
+                        onClick = {
+                            scope.launch {
+                                update = UpdateState.Checking
+                                val release = withContext(Dispatchers.IO) { Updates.latest() }
+                                update = when {
+                                    release == null -> UpdateState.Failed
+                                    Updates.isNewer(release.version, BuildConfig.VERSION_NAME) -> UpdateState.Available(release)
+                                    else -> UpdateState.Current
+                                }
+                            }
+                        },
+                    ) { Text("check") }
+                }
+            }
+
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
@@ -201,6 +248,14 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
             }
         }
     }
+}
+
+private sealed interface UpdateState {
+    data object Idle : UpdateState
+    data object Checking : UpdateState
+    data object Current : UpdateState
+    data object Failed : UpdateState
+    data class Available(val release: Updates.Release) : UpdateState
 }
 
 @Composable

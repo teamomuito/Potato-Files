@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.teamomuito.octofiles.data.Access
+import io.github.teamomuito.octofiles.data.ClearAssist
 import io.github.teamomuito.octofiles.data.AppRules
 import io.github.teamomuito.octofiles.data.AppUsage
 import io.github.teamomuito.octofiles.data.Apps
@@ -125,6 +126,7 @@ class CleanViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Back from an app's settings page: count what went, move on to the next one. */
     fun afterGuidedStep() {
+        ClearAssist.end()
         val g = guided.value ?: return
         val app = g.next ?: return
         viewModelScope.launch(Dispatchers.IO) {

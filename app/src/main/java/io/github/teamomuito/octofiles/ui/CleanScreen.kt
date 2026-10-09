@@ -73,6 +73,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.teamomuito.octofiles.data.Access
 import io.github.teamomuito.octofiles.data.AppRules
 import io.github.teamomuito.octofiles.data.AppUsage
+import io.github.teamomuito.octofiles.data.ClearAssist
 import io.github.teamomuito.octofiles.data.Expiry
 import io.github.teamomuito.octofiles.data.JunkItem
 import io.github.teamomuito.octofiles.data.JunkKind
@@ -120,7 +121,9 @@ fun CleanScreen(vm: CleanViewModel, onSettings: () -> Unit) {
     }
     val openNext: () -> Unit = {
         guided?.next?.let { app ->
+            ClearAssist.begin()
             runCatching { guidedStep.launch(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", app.pkg, null))) }
+                .onFailure { ClearAssist.end() }
         }
     }
     var uninstalling by remember { mutableStateOf<String?>(null) }
@@ -297,7 +300,8 @@ fun CleanScreen(vm: CleanViewModel, onSettings: () -> Unit) {
                 Text(
                     "some phones, samsung included, leave out android's clear-all-caches screen, and apps aren't " +
                         "allowed to clear other apps' caches themselves. potato can walk you through the big ones " +
-                        "instead: it opens each app's page, you tap storage, then clear cache, and come back for the next.",
+                        "instead: it opens each app's page, you tap storage, then clear cache, and come back for the next. " +
+                        "turn on its helper in accessibility settings and it does those taps for you.",
                 )
             },
             confirmButton = {
@@ -502,6 +506,8 @@ private fun ago(time: Long): String =
 private fun GuidedCard(g: CleanViewModel.Guided, onOpen: () -> Unit, onSkip: () -> Unit, onStop: () -> Unit) {
     val context = LocalContext.current
     val next = g.next
+    var helperOn by remember { mutableStateOf(ClearAssist.enabled(context)) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { helperOn = ClearAssist.enabled(context) }
     GlassCard(
         tint = MaterialTheme.colorScheme.primaryContainer.copy(alpha = if (LocalGlass.current.dark) 0.5f else 0.75f),
         modifier = Modifier.fillMaxWidth(),
@@ -530,6 +536,17 @@ private fun GuidedCard(g: CleanViewModel.Guided, onOpen: () -> Unit, onSkip: () 
                 Row {
                     TextButton(onClick = onSkip) { Text("skip this one") }
                     TextButton(onClick = onStop) { Text("stop") }
+                }
+                if (!helperOn) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "want potato to do the taps? turn on its helper in accessibility settings and the walk runs itself.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    TextButton(onClick = { runCatching { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } }) {
+                        Text("turn on helper")
+                    }
                 }
             }
         }
