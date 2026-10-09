@@ -61,6 +61,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 
 /** Files copied or cut from the browser, waiting for a paste. */
 object FileClip {
@@ -81,7 +84,7 @@ private sealed interface Pending {
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FilesScreen(onOpenText: (File) -> Unit, onSwipe: (File) -> Unit) {
+fun FilesScreen(onOpenText: (File) -> Unit, onSwipe: (File) -> Unit, onSettings: () -> Unit) {
     val context = LocalContext.current
     val db = remember { FilesDb.get(context) }
     val scope = rememberCoroutineScope()
@@ -182,7 +185,12 @@ fun FilesScreen(onOpenText: (File) -> Unit, onSwipe: (File) -> Unit) {
         ) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("files", style = MaterialTheme.typography.headlineMedium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("files", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
+                        IconButton(onClick = onSettings) {
+                            Icon(Icons.Rounded.Settings, contentDescription = "settings")
+                        }
+                    }
                     Text(
                         "${formatBytes(context, space.first)} free of ${formatBytes(context, space.second)}",
                         style = MaterialTheme.typography.bodySmall,

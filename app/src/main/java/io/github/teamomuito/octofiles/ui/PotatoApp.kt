@@ -149,6 +149,7 @@ private fun Screens(vm: MainViewModel) {
                     TAB_FILES -> FilesScreen(
                         onOpenText = { viewing = it.absolutePath },
                         onSwipe = { swipeRoot = it.absolutePath },
+                        onSettings = { settingsOpen = true },
                     )
                     TAB_SCREENSHOTS -> HomeScreen(
                         vm = vm,
@@ -159,7 +160,10 @@ private fun Screens(vm: MainViewModel) {
                     )
                     TAB_SWIPE -> SwipeScreen(swipe, onSettings = { settingsOpen = true })
                     TAB_CLEAN -> CleanScreen(clean, onSettings = { settingsOpen = true })
-                    else -> ToolsScreen(onSwipeAll = { swipeRoot = Fs.storage.absolutePath })
+                    else -> ToolsScreen(
+                        onSwipeAll = { swipeRoot = Fs.storage.absolutePath },
+                        onSettings = { settingsOpen = true },
+                    )
                 }
             }
         }

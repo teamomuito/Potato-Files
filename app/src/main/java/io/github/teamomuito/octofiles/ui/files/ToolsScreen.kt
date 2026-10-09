@@ -65,6 +65,9 @@ import java.io.File
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 
 enum class Tool(val title: String, val blurb: String) {
     ANALYZER("storage analyzer", "what's taking the space, and what you haven't opened in ages"),
@@ -81,7 +84,7 @@ enum class Tool(val title: String, val blurb: String) {
 /** The tools tab. Everything here runs on the phone. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ToolsScreen(onSwipeAll: () -> Unit) {
+fun ToolsScreen(onSwipeAll: () -> Unit, onSettings: () -> Unit) {
     var tool by rememberSaveable { mutableStateOf<Tool?>(null) }
     BackHandler(enabled = tool != null) { tool = null }
 
@@ -94,7 +97,12 @@ fun ToolsScreen(onSwipeAll: () -> Unit) {
         ) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("tools", style = MaterialTheme.typography.headlineMedium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("tools", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
+                        IconButton(onClick = onSettings) {
+                            Icon(Icons.Rounded.Settings, contentDescription = "settings")
+                        }
+                    }
                     Button(onClick = onSwipeAll, modifier = Modifier.fillMaxWidth()) { Text("swipe through everything") }
                 }
             }
