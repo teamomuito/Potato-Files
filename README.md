@@ -57,6 +57,26 @@ Needs JDK 17 and the Android SDK, which Android Studio sets up.
 ./gradlew testDebugUnitTest
 ```
 
+## CI and releases
+
+`.github/workflows/android.yml` runs the unit tests and builds both APKs on every push and pull request. The APKs are attached to the run as the `potato-files-apks` artifact.
+
+To release, push a version tag:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The tag build is signed with the release key and published as a GitHub release with the release APK attached. Tags with a `-` (like `v0.2.0-beta`) are marked as pre-releases. The version code is the workflow run number, so each release installs over the previous one.
+
+Repo secrets needed for signing (Settings → Secrets and variables → Actions):
+
+- `OCTO_KEYSTORE_BASE64`: the keystore file, base64-encoded (`base64 -w0 release.jks`)
+- `OCTO_KEYSTORE_PASSWORD`, `OCTO_KEY_ALIAS`, `OCTO_KEY_PASSWORD`
+
+Keep the keystore backed up somewhere safe. If it's lost, existing installs can't be updated.
+
 ## License
 
 MIT, same as octo potato. Sniglet is under the SIL Open Font License, see [`licenses/`](licenses).
