@@ -16,9 +16,14 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Favorite
@@ -54,6 +59,7 @@ import io.github.teamomuito.octofiles.ui.files.ViewerScreen
 import java.io.File
 import io.github.teamomuito.octofiles.data.Shot
 import io.github.teamomuito.octofiles.ui.theme.BAR_SPACE
+import io.github.teamomuito.octofiles.ui.theme.DsHeader
 import io.github.teamomuito.octofiles.ui.theme.GridBackground
 import io.github.teamomuito.octofiles.ui.theme.DsTabBar
 import io.github.teamomuito.octofiles.ui.theme.LocalBarSpace
@@ -134,28 +140,37 @@ private fun Screens(vm: MainViewModel) {
     val showBar = (tab != TAB_SWIPE || swiping == null) && swipeRoot == null
 
     Box(Modifier.fillMaxSize()) {
-        Box(Modifier.fillMaxSize()) {
-            GridBackground()
-            CompositionLocalProvider(LocalBarSpace provides if (showBar) BAR_SPACE else 0.dp) {
-                when (tab) {
-                    TAB_FILES -> FilesScreen(
-                        onOpenText = { viewing = it.absolutePath },
-                        onSwipe = { swipeRoot = it.absolutePath },
-                        onSettings = { settingsOpen = true },
-                    )
-                    TAB_SCREENSHOTS -> HomeScreen(
-                        vm = vm,
-                        due = due,
-                        onOpen = { openId = it.id },
-                        onSettings = { settingsOpen = true },
-                        onTidy = { trash(due) },
-                    )
-                    TAB_SWIPE -> SwipeScreen(swipe, onSettings = { settingsOpen = true })
-                    TAB_CLEAN -> CleanScreen(clean, onSettings = { settingsOpen = true })
-                    else -> ToolsScreen(
-                        onSwipeAll = { swipeRoot = Fs.storage.absolutePath },
-                        onSettings = { settingsOpen = true },
-                    )
+        Column(Modifier.fillMaxSize()) {
+            if (showBar) DsHeader(title = TABS[tab].label)
+            Box(
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    // the header already took the status bar, so the screens below mustn't pad for it again
+                    .then(if (showBar) Modifier.consumeWindowInsets(WindowInsets.statusBars) else Modifier),
+            ) {
+                GridBackground()
+                CompositionLocalProvider(LocalBarSpace provides if (showBar) BAR_SPACE else 0.dp) {
+                    when (tab) {
+                        TAB_FILES -> FilesScreen(
+                            onOpenText = { viewing = it.absolutePath },
+                            onSwipe = { swipeRoot = it.absolutePath },
+                            onSettings = { settingsOpen = true },
+                        )
+                        TAB_SCREENSHOTS -> HomeScreen(
+                            vm = vm,
+                            due = due,
+                            onOpen = { openId = it.id },
+                            onSettings = { settingsOpen = true },
+                            onTidy = { trash(due) },
+                        )
+                        TAB_SWIPE -> SwipeScreen(swipe, onSettings = { settingsOpen = true })
+                        TAB_CLEAN -> CleanScreen(clean, onSettings = { settingsOpen = true })
+                        else -> ToolsScreen(
+                            onSwipeAll = { swipeRoot = Fs.storage.absolutePath },
+                            onSettings = { settingsOpen = true },
+                        )
+                    }
                 }
             }
         }
