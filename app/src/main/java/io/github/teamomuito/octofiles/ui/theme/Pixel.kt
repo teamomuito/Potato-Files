@@ -3,7 +3,6 @@ package io.github.teamomuito.octofiles.ui.theme
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,9 +25,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,51 +39,81 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PointMode
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.material3.LocalContentColor
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.hazeEffect
+import kotlin.math.roundToInt
+
+/** One pixel of the pixel art. Every rounded corner is built from steps this size. */
+private val PIXEL = 3.dp
+
+/** Corners as little staircases, like pixel art. A bigger [radius] takes more steps, up to three. */
+fun pixelCorners(radius: Dp): Shape = PixelShape(((radius / PIXEL) / 2f).roundToInt().coerceIn(1, 3))
+
+private class PixelShape(private val steps: Int) : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+        val n = steps
+        val w = size.width
+        val h = size.height
+        // the steps never eat more than half of a side
+        val c = minOf(with(density) { PIXEL.toPx() }, w / (2 * n), h / (2 * n))
+        val path = Path().apply {
+            // walk the outline clockwise from the left edge: top-left, top-right, bottom-right, bottom-left
+            moveTo(0f, n * c)
+            for (j in 0 until n) {
+                lineTo(j * c, (n - j) * c)
+                lineTo((j + 1) * c, (n - j) * c)
+                lineTo((j + 1) * c, (n - j - 1) * c)
+            }
+            for (j in 0 until n) {
+                lineTo(w - (n - j) * c, j * c)
+                lineTo(w - (n - j) * c, (j + 1) * c)
+                lineTo(w - (n - j - 1) * c, (j + 1) * c)
+            }
+            for (j in n - 1 downTo 0) {
+                lineTo(w - (n - j - 1) * c, h - (j + 1) * c)
+                lineTo(w - (n - j) * c, h - (j + 1) * c)
+                lineTo(w - (n - j) * c, h - j * c)
+            }
+            for (j in n - 1 downTo 0) {
+                lineTo((j + 1) * c, h - (n - j - 1) * c)
+                lineTo((j + 1) * c, h - (n - j) * c)
+                lineTo(j * c, h - (n - j) * c)
+            }
+            close()
+        }
+        return Outline.Generic(path)
+    }
+}
 
 /**
- * The liquid glass look. Panels are translucent with a bright rim and a soft sheen on top,
- * floating over a blurry wash of color. Only the tab bar does real backdrop blur (it's the
- * one thing content scrolls under); everything else fakes it, which keeps scrolling smooth.
+ * A panel, like the windows and keys on the DS: a solid fill with a navy rim.
+ * Nothing is see-through, so the dot grid never shows through a card.
  */
 @Immutable
-data class Glass(
+data class Panel(
     val fill: Color,
-    val rim: Brush,
-    val sheen: Brush,
-    val blur: Color,
+    val rim: Color,
     val dark: Boolean,
 )
 
-val LightGlass = Glass(
-    fill = Color.White.copy(alpha = 0.52f),
-    rim = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.95f), Color.White.copy(alpha = 0.3f), Color.White.copy(alpha = 0.75f))),
-    sheen = Brush.verticalGradient(0f to Color.White.copy(alpha = 0.38f), 0.5f to Color.Transparent),
-    blur = Color.White.copy(alpha = 0.3f),
-    dark = false,
-)
+val LightPanel = Panel(fill = Color.White, rim = Color(0xFF1C3F7A), dark = false)
 
-val DarkGlass = Glass(
-    fill = Color.White.copy(alpha = 0.07f),
-    rim = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.32f), Color.White.copy(alpha = 0.05f), Color.White.copy(alpha = 0.18f))),
-    sheen = Brush.verticalGradient(0f to Color.White.copy(alpha = 0.09f), 0.5f to Color.Transparent),
-    blur = Color.White.copy(alpha = 0.06f),
-    dark = true,
-)
+val DarkPanel = Panel(fill = Color(0xFF17386B), rim = Color(0xFF5C8FC7), dark = true)
 
-val LocalGlass = staticCompositionLocalOf { LightGlass }
+val LocalPanel = staticCompositionLocalOf { LightPanel }
 
 /** How much room the floating tab bar takes at the bottom, so lists can scroll clear of it. */
 val LocalBarSpace = compositionLocalOf { 0.dp }
@@ -93,13 +121,14 @@ val LocalBarSpace = compositionLocalOf { 0.dp }
 @Composable
 fun bottomSpace(): Dp = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + LocalBarSpace.current
 
-fun Modifier.glass(shape: Shape, glass: Glass, tint: Color? = null): Modifier =
+/** A panel's fill and rim. [tint] goes over the fill, so the panel stays solid underneath. */
+fun Modifier.panel(shape: Shape, panel: Panel, tint: Color? = null): Modifier =
     clip(shape)
-        .background(tint ?: glass.fill)
-        .background(glass.sheen)
-        .border(1.dp, glass.rim, shape)
+        .background(panel.fill)
+        .then(if (tint != null) Modifier.background(tint) else Modifier)
+        .border(2.dp, panel.rim, shape)
 
-/** Clickable that squishes a little while pressed. */
+/** Clickable that squishes a little while pressed, like a key on the DS. */
 @Composable
 private fun Modifier.applySquish(enabled: Boolean, onClick: () -> Unit): Modifier {
     val source = remember { MutableInteractionSource() }
@@ -116,80 +145,67 @@ fun Squishy(modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () 
     Box(modifier.applySquish(enabled, onClick), contentAlignment = Alignment.Center) { content() }
 }
 
-/** A glass panel. Pass [onClick] and it squishes when pressed. */
+/** A panel. Pass [onClick] and it squishes when pressed. */
 @Composable
-fun GlassCard(
+fun PanelCard(
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(26.dp),
+    shape: Shape = pixelCorners(26.dp),
     tint: Color? = null,
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val glass = LocalGlass.current
+    val panel = LocalPanel.current
     val base = if (onClick != null) modifier.applySquish(true, onClick) else modifier
     CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
-        Column(base.glass(shape, glass, tint), content = content)
+        Column(base.panel(shape, panel, tint), content = content)
     }
 }
 
-private data class Blob(val color: Color, val x: Float, val y: Float, val radius: Float)
-
-private val lightBlobs = listOf(
-    Blob(Color(0xFFFFE08A), 0.05f, 0.04f, 1.0f),
-    Blob(Color(0xFFFFF1B8), 1.05f, 0.34f, 0.9f),
-    Blob(Color(0xFFFFD966), -0.05f, 0.7f, 0.85f),
-    Blob(Color(0xFFFFEBA8), 0.95f, 1.0f, 0.85f),
-)
-
-private val darkBlobs = listOf(
-    Blob(Color(0xFF6B5200), 0.05f, 0.04f, 1.0f),
-    Blob(Color(0xFF4A3A0C), 1.05f, 0.34f, 0.9f),
-    Blob(Color(0xFF5A4A10), -0.05f, 0.7f, 0.85f),
-    Blob(Color(0xFF7A5C0A), 0.95f, 1.0f, 0.85f),
-)
-
-/** Soft color blobs everything floats on. Static on purpose: nothing to redraw while scrolling. */
+/** The DS top screen: a sky-blue field with a grid of pixel dots. Static, so nothing redraws while scrolling. */
 @Composable
-fun LiquidBackground(modifier: Modifier = Modifier) {
+fun PixelBackground(modifier: Modifier = Modifier) {
+    val panel = LocalPanel.current
     val base = MaterialTheme.colorScheme.background
-    val blobs = if (LocalGlass.current.dark) darkBlobs else lightBlobs
-    Canvas(modifier.fillMaxSize()) {
-        drawRect(base)
-        for (b in blobs) {
-            val center = Offset(size.width * b.x, size.height * b.y)
-            val radius = size.width * b.radius
-            drawCircle(Brush.radialGradient(listOf(b.color, b.color.copy(alpha = 0f)), center, radius), radius, center)
-        }
-    }
+    val dot = if (panel.dark) Color(0xFF3D6FB0) else Color.White
+    Box(
+        modifier
+            .fillMaxSize()
+            .drawWithCache {
+                val step = 8.dp.toPx()
+                val points = buildList {
+                    var y = step / 2
+                    while (y < size.height) {
+                        var x = step / 2
+                        while (x < size.width) {
+                            add(Offset(x, y))
+                            x += step
+                        }
+                        y += step
+                    }
+                }
+                onDrawBehind {
+                    drawRect(base)
+                    drawPoints(points, PointMode.Points, dot, strokeWidth = 2.dp.toPx(), cap = StrokeCap.Square)
+                }
+            },
+    )
 }
 
 data class TabItem(val label: String, val icon: ImageVector)
 
 /**
- * The floating tab bar: real frosted glass over whatever scrolls behind it, with a pill
- * that slides to the selected tab.
+ * The bottom screen's key row: one panel with a blue key that slides to the selected tab.
  */
 @Composable
-fun GlassTabBar(tabs: List<TabItem>, selected: Int, onSelect: (Int) -> Unit, haze: HazeState, modifier: Modifier = Modifier) {
-    val glass = LocalGlass.current
-    val shape = RoundedCornerShape(32.dp)
-    val style = HazeStyle(
-        backgroundColor = MaterialTheme.colorScheme.background,
-        tints = listOf(HazeTint(glass.blur)),
-        blurRadius = 22.dp,
-        noiseFactor = 0.04f,
-        fallbackTint = HazeTint(MaterialTheme.colorScheme.background.copy(alpha = 0.92f)),
-    )
+fun PixelTabBar(tabs: List<TabItem>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+    val panel = LocalPanel.current
     BoxWithConstraints(
         modifier
             .navigationBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 10.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
             .fillMaxWidth()
             .height(BAR_HEIGHT)
-            .clip(shape)
-            .hazeEffect(haze, style)
-            .background(glass.sheen)
-            .border(1.dp, glass.rim, shape),
+            .panel(pixelCorners(16.dp), panel),
     ) {
         val slot = maxWidth / tabs.size
         val x by animateDpAsState(slot * selected, spring(dampingRatio = 0.7f, stiffness = 420f), label = "tab")
@@ -198,14 +214,14 @@ fun GlassTabBar(tabs: List<TabItem>, selected: Int, onSelect: (Int) -> Unit, haz
                 .offset(x = x)
                 .width(slot)
                 .fillMaxHeight()
-                .padding(6.dp)
-                .clip(RoundedCornerShape(26.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = if (glass.dark) 0.55f else 0.8f)),
+                .padding(5.dp)
+                .clip(pixelCorners(10.dp))
+                .background(MaterialTheme.colorScheme.primary),
         )
         Row(Modifier.fillMaxSize()) {
             tabs.forEachIndexed { i, tab ->
                 val on = i == selected
-                val tint = if (on) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                val tint = if (on) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                 Squishy(
                     modifier = Modifier
                         .weight(1f)
@@ -226,9 +242,9 @@ fun GlassTabBar(tabs: List<TabItem>, selected: Int, onSelect: (Int) -> Unit, haz
 val BAR_HEIGHT = 64.dp
 val BAR_SPACE = BAR_HEIGHT + 24.dp
 
-/** A round glass button, for the swipe card controls. */
+/** A round-ish panel button, for the swipe card controls. */
 @Composable
-fun GlassCircle(
+fun PanelCircle(
     icon: ImageVector,
     description: String,
     tint: Color,
@@ -237,12 +253,12 @@ fun GlassCircle(
     enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
-    val glass = LocalGlass.current
+    val panel = LocalPanel.current
     Squishy(
         modifier = Modifier
             .size(size)
             .graphicsLayer { alpha = if (enabled) 1f else 0.4f }
-            .glass(CircleShape, glass, tint.copy(alpha = if (glass.dark) 0.35f else 0.75f)),
+            .panel(pixelCorners(size / 2), panel, tint.copy(alpha = if (panel.dark) 0.35f else 0.75f)),
         enabled = enabled,
         onClick = onClick,
     ) {

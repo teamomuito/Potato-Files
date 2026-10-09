@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -60,10 +59,11 @@ import androidx.compose.ui.unit.dp
 import io.github.teamomuito.octofiles.R
 import io.github.teamomuito.octofiles.data.Kind
 import io.github.teamomuito.octofiles.data.Snippet
-import io.github.teamomuito.octofiles.ui.theme.GlassCard
-import io.github.teamomuito.octofiles.ui.theme.LocalGlass
+import io.github.teamomuito.octofiles.ui.theme.PanelCard
+import io.github.teamomuito.octofiles.ui.theme.LocalPanel
 import io.github.teamomuito.octofiles.ui.theme.Pastel
 import io.github.teamomuito.octofiles.ui.theme.bottomSpace
+import io.github.teamomuito.octofiles.ui.theme.pixelCorners
 import kotlin.math.sqrt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -96,7 +96,7 @@ fun Potato(modifier: Modifier = Modifier, boxSize: Dp = 120.dp, bob: Boolean = t
 @Composable
 fun KindPill(kind: Kind, modifier: Modifier = Modifier) {
     val (bg, ink, label) = when (kind) {
-        Kind.QR -> Triple(Pastel.lavender, Pastel.lavenderInk, "qr code")
+        Kind.QR -> Triple(Pastel.pink, Pastel.pinkInk, "qr code")
         Kind.BOARDING -> Triple(Pastel.sky, Pastel.skyInk, "boarding pass")
         Kind.CODE -> Triple(Pastel.mint, Pastel.mintInk, "login code")
         Kind.NORMAL -> return
@@ -112,7 +112,7 @@ fun Pill(text: String, background: Color, ink: Color, modifier: Modifier = Modif
         style = MaterialTheme.typography.labelSmall,
         maxLines = 1,
         modifier = modifier
-            .background(background, RoundedCornerShape(50))
+            .background(background, pixelCorners(50.dp))
             .padding(horizontal = 8.dp, vertical = 3.dp),
     )
 }
@@ -227,8 +227,8 @@ fun formatBytes(context: Context, bytes: Long): String = Formatter.formatShortFi
 
 @Composable
 fun NoteCard(title: String, body: String, action: String, onAction: () -> Unit) {
-    GlassCard(
-        tint = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = if (LocalGlass.current.dark) 0.45f else 0.7f),
+    PanelCard(
+        tint = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = if (LocalPanel.current.dark) 0.45f else 0.7f),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp),

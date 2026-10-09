@@ -45,8 +45,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
 import io.github.teamomuito.octofiles.data.Access
 import io.github.teamomuito.octofiles.files.Fs
 import io.github.teamomuito.octofiles.ui.files.FilesScreen
@@ -56,8 +54,8 @@ import io.github.teamomuito.octofiles.ui.files.ViewerScreen
 import java.io.File
 import io.github.teamomuito.octofiles.data.Shot
 import io.github.teamomuito.octofiles.ui.theme.BAR_SPACE
-import io.github.teamomuito.octofiles.ui.theme.GlassTabBar
-import io.github.teamomuito.octofiles.ui.theme.LiquidBackground
+import io.github.teamomuito.octofiles.ui.theme.PixelBackground
+import io.github.teamomuito.octofiles.ui.theme.PixelTabBar
 import io.github.teamomuito.octofiles.ui.theme.LocalBarSpace
 import io.github.teamomuito.octofiles.ui.theme.TabItem
 import kotlinx.coroutines.launch
@@ -134,16 +132,10 @@ private fun Screens(vm: MainViewModel) {
 
     // the cards get the whole screen while you're swiping through a month or through everything
     val showBar = (tab != TAB_SWIPE || swiping == null) && swipeRoot == null
-    val haze = remember { HazeState() }
 
     Box(Modifier.fillMaxSize()) {
-        // everything the frosted tab bar can see through
-        Box(
-            Modifier
-                .fillMaxSize()
-                .hazeSource(haze),
-        ) {
-            LiquidBackground()
+        Box(Modifier.fillMaxSize()) {
+            PixelBackground()
             CompositionLocalProvider(LocalBarSpace provides if (showBar) BAR_SPACE else 0.dp) {
                 when (tab) {
                     TAB_FILES -> FilesScreen(
@@ -173,11 +165,10 @@ private fun Screens(vm: MainViewModel) {
             exit = slideOutVertically { it } + fadeOut(),
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
-            GlassTabBar(
+            PixelTabBar(
                 tabs = TABS,
                 selected = tab,
                 onSelect = { tab = it },
-                haze = haze,
             )
         }
         AnimatedVisibility(

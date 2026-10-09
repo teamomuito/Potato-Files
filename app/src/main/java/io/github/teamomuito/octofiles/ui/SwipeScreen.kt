@@ -39,7 +39,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Delete
@@ -72,11 +71,12 @@ import io.github.teamomuito.octofiles.data.Access
 import io.github.teamomuito.octofiles.data.MediaEntry
 import io.github.teamomuito.octofiles.data.MonthSummary
 import io.github.teamomuito.octofiles.data.MonthView
-import io.github.teamomuito.octofiles.ui.theme.GlassCard
-import io.github.teamomuito.octofiles.ui.theme.LocalGlass
+import io.github.teamomuito.octofiles.ui.theme.PanelCard
+import io.github.teamomuito.octofiles.ui.theme.LocalPanel
 import io.github.teamomuito.octofiles.ui.theme.Pastel
 import io.github.teamomuito.octofiles.ui.theme.bottomSpace
-import io.github.teamomuito.octofiles.ui.theme.glass
+import io.github.teamomuito.octofiles.ui.theme.panel
+import io.github.teamomuito.octofiles.ui.theme.pixelCorners
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -196,8 +196,8 @@ private fun MonthList(vm: SwipeViewModel, onSettings: () -> Unit) {
 
 @Composable
 private fun FreedBanner(freed: String?, items: Int) {
-    GlassCard(
-        tint = MaterialTheme.colorScheme.primaryContainer.copy(alpha = if (LocalGlass.current.dark) 0.5f else 0.7f),
+    PanelCard(
+        tint = MaterialTheme.colorScheme.primaryContainer.copy(alpha = if (LocalPanel.current.dark) 0.5f else 0.7f),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp),
@@ -223,8 +223,8 @@ private fun MonthRow(month: MonthSummary, onClick: () -> Unit) {
         add(formatBytes(context, month.bytes))
     }.joinToString(" · ")
 
-    GlassCard(
-        shape = RoundedCornerShape(22.dp),
+    PanelCard(
+        shape = pixelCorners(22.dp),
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -239,7 +239,7 @@ private fun MonthRow(month: MonthSummary, onClick: () -> Unit) {
                         trackColor = MaterialTheme.colorScheme.primaryContainer,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(50)),
+                            .clip(pixelCorners(50.dp)),
                     )
                 }
             }
@@ -247,7 +247,7 @@ private fun MonthRow(month: MonthSummary, onClick: () -> Unit) {
             when {
                 month.toDelete > 0 -> Pill("${month.toDelete} to delete", Pastel.butter, Pastel.butterInk)
                 month.done -> Pill("done", Pastel.mint, Pastel.mintInk)
-                month.reviewed > 0 -> Pill("${month.reviewed * 100 / month.total}%", Pastel.lavender, Pastel.lavenderInk)
+                month.reviewed > 0 -> Pill("${month.reviewed * 100 / month.total}%", Pastel.pink, Pastel.pinkInk)
             }
         }
     }
@@ -321,7 +321,7 @@ private fun MarkedChip(bytes: Long, count: Int, onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .glass(RoundedCornerShape(50), LocalGlass.current, MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f))
+            .panel(pixelCorners(50.dp), LocalPanel.current, MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
@@ -437,8 +437,8 @@ private fun ReviewPile(
                     Box(
                         Modifier
                             .aspectRatio(0.8f)
-                            .clip(RoundedCornerShape(16.dp))
-                            .border(1.dp, LocalGlass.current.rim, RoundedCornerShape(16.dp))
+                            .clip(pixelCorners(16.dp))
+                            .border(2.dp, LocalPanel.current.rim, pixelCorners(16.dp))
                             .clickable { onRescue(entry) },
                     ) {
                         Thumbnail(Uri.parse(entry.uri), Modifier.fillMaxSize(), alignment = Alignment.Center)

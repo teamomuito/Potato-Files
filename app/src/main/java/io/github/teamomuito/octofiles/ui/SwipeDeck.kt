@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Favorite
@@ -42,9 +41,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
-import io.github.teamomuito.octofiles.ui.theme.GlassCircle
-import io.github.teamomuito.octofiles.ui.theme.LocalGlass
+import io.github.teamomuito.octofiles.ui.theme.PanelCircle
+import io.github.teamomuito.octofiles.ui.theme.LocalPanel
 import io.github.teamomuito.octofiles.ui.theme.Pastel
+import io.github.teamomuito.octofiles.ui.theme.pixelCorners
 import kotlin.math.abs
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -175,9 +175,9 @@ fun <T> SwipeDeck(
                 .fillMaxWidth()
                 .padding(top = 6.dp, bottom = 16.dp),
         ) {
-            GlassCircle(Icons.Rounded.Close, "delete", Color(0xFFFFE9A6), Color(0xFF8A5A00), 68.dp) { decide(keep = false) }
-            GlassCircle(Icons.Rounded.Refresh, "undo", Color.White, MaterialTheme.colorScheme.onSurfaceVariant, 48.dp, enabled = canUndo, onClick = onUndo)
-            GlassCircle(Icons.Rounded.Favorite, "keep", Pastel.mint, Pastel.mintInk, 68.dp) { decide(keep = true) }
+            PanelCircle(Icons.Rounded.Close, "delete", Color(0xFFFFC9C2), Color(0xFFA3291C), 68.dp) { decide(keep = false) }
+            PanelCircle(Icons.Rounded.Refresh, "undo", Color.White, MaterialTheme.colorScheme.onSurfaceVariant, 48.dp, enabled = canUndo, onClick = onUndo)
+            PanelCircle(Icons.Rounded.Favorite, "keep", Pastel.mint, Pastel.mintInk, 68.dp) { decide(keep = true) }
         }
     }
 }
@@ -196,13 +196,13 @@ fun SwipeCard(
     onClick: () -> Unit,
     picture: @Composable BoxScope.() -> Unit,
 ) {
-    val shape = RoundedCornerShape(28.dp)
+    val shape = pixelCorners(28.dp)
     Box(
         modifier
             .shadow(10.dp, shape)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(1.5.dp, LocalGlass.current.rim, shape)
+            .border(2.dp, LocalPanel.current.rim, shape)
             .clickable(onClick = onClick),
     ) {
         picture()
@@ -231,7 +231,7 @@ fun SwipeCard(
         )
         Stamp(
             "bye",
-            Color(0xFFB26A00),
+            Color(0xFFD9641B),
             Modifier
                 .align(Alignment.TopEnd)
                 .padding(24.dp)
@@ -250,8 +250,8 @@ private fun Stamp(text: String, color: Color, modifier: Modifier) {
         style = MaterialTheme.typography.headlineMedium,
         color = color,
         modifier = modifier
-            .background(Color.White.copy(alpha = 0.85f), RoundedCornerShape(14.dp))
-            .border(BorderStroke(3.dp, color), RoundedCornerShape(14.dp))
+            .background(Color.White.copy(alpha = 0.85f), pixelCorners(14.dp))
+            .border(BorderStroke(3.dp, color), pixelCorners(14.dp))
             .padding(horizontal = 14.dp, vertical = 4.dp),
     )
 }

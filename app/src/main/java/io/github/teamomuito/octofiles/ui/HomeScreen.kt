@@ -24,7 +24,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -57,10 +56,11 @@ import io.github.teamomuito.octofiles.data.Expiry
 import io.github.teamomuito.octofiles.data.Progress
 import io.github.teamomuito.octofiles.data.Shot
 import io.github.teamomuito.octofiles.data.TidySettings
-import io.github.teamomuito.octofiles.ui.theme.LocalGlass
+import io.github.teamomuito.octofiles.ui.theme.LocalPanel
 import io.github.teamomuito.octofiles.ui.theme.Pastel
 import io.github.teamomuito.octofiles.ui.theme.bottomSpace
-import io.github.teamomuito.octofiles.ui.theme.glass
+import io.github.teamomuito.octofiles.ui.theme.panel
+import io.github.teamomuito.octofiles.ui.theme.pixelCorners
 
 @Composable
 fun HomeScreen(
@@ -145,7 +145,7 @@ private fun Header(progress: Progress?, onSettings: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 4.dp)
-                .clip(RoundedCornerShape(50)),
+                .clip(pixelCorners(50.dp)),
         )
     }
 }
@@ -160,7 +160,7 @@ private fun statusLine(p: Progress?): String = when {
 @Composable
 private fun SearchBox(query: String, onChange: (String) -> Unit) {
     val focus = LocalFocusManager.current
-    val glass = LocalGlass.current
+    val panel = LocalPanel.current
     OutlinedTextField(
         value = query,
         onValueChange = onChange,
@@ -170,13 +170,13 @@ private fun SearchBox(query: String, onChange: (String) -> Unit) {
             { IconButton(onClick = { onChange("") }) { Icon(Icons.Rounded.Close, contentDescription = "clear") } }
         },
         singleLine = true,
-        shape = RoundedCornerShape(50),
+        shape = pixelCorners(50.dp),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = glass.fill,
-            unfocusedContainerColor = glass.fill,
-            unfocusedBorderColor = Color.White.copy(alpha = if (glass.dark) 0.18f else 0.85f),
+            focusedContainerColor = panel.fill,
+            unfocusedContainerColor = panel.fill,
+            unfocusedBorderColor = panel.rim,
         ),
         modifier = Modifier
             .fillMaxWidth()
@@ -187,7 +187,7 @@ private fun SearchBox(query: String, onChange: (String) -> Unit) {
 @Composable
 private fun FilterRow(selected: Filter, showSoon: Boolean, onPick: (Filter) -> Unit) {
     val filters = Filter.entries.filter { it != Filter.SOON || showSoon }
-    val glass = LocalGlass.current
+    val panel = LocalPanel.current
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -197,16 +197,16 @@ private fun FilterRow(selected: Filter, showSoon: Boolean, onPick: (Filter) -> U
                 selected = f == selected,
                 onClick = { onPick(f) },
                 label = { Text(f.label) },
-                shape = RoundedCornerShape(50),
+                shape = pixelCorners(50.dp),
                 colors = FilterChipDefaults.filterChipColors(
-                    containerColor = glass.fill,
+                    containerColor = panel.fill,
                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
                     selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 ),
                 border = FilterChipDefaults.filterChipBorder(
                     enabled = true,
                     selected = f == selected,
-                    borderColor = Color.White.copy(alpha = if (glass.dark) 0.18f else 0.85f),
+                    borderColor = panel.rim,
                     selectedBorderColor = Color.Transparent,
                 ),
             )
@@ -218,7 +218,7 @@ private fun FilterRow(selected: Filter, showSoon: Boolean, onPick: (Filter) -> U
 @Composable
 private fun ShotGrid(shots: List<Shot>, tidy: TidySettings, onOpen: (Shot) -> Unit) {
     val now = System.currentTimeMillis()
-    val glass = LocalGlass.current
+    val panel = LocalPanel.current
     LazyVerticalGrid(
         columns = GridCells.Adaptive(104.dp),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp + bottomSpace()),
@@ -230,8 +230,8 @@ private fun ShotGrid(shots: List<Shot>, tidy: TidySettings, onOpen: (Shot) -> Un
             Box(
                 Modifier
                     .aspectRatio(0.6f)
-                    .clip(RoundedCornerShape(18.dp))
-                    .border(1.dp, glass.rim, RoundedCornerShape(18.dp))
+                    .clip(pixelCorners(18.dp))
+                    .border(2.dp, panel.rim, pixelCorners(18.dp))
                     .clickable { onOpen(shot) },
             ) {
                 Thumbnail(shot.uri, Modifier.fillMaxSize())
@@ -254,7 +254,7 @@ private fun leavingLabel(shot: Shot, tidy: TidySettings, now: Long): String? {
 @Composable
 private fun ResultList(shots: List<Shot>, onOpen: (Shot) -> Unit) {
     val hit = hitStyle(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer)
-    val glass = LocalGlass.current
+    val panel = LocalPanel.current
     LazyColumn(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp + bottomSpace()),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -264,7 +264,7 @@ private fun ResultList(shots: List<Shot>, onOpen: (Shot) -> Unit) {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .glass(RoundedCornerShape(22.dp), glass)
+                    .panel(pixelCorners(22.dp), panel)
                     .clickable { onOpen(shot) }
                     .padding(10.dp),
             ) {
@@ -272,7 +272,7 @@ private fun ResultList(shots: List<Shot>, onOpen: (Shot) -> Unit) {
                     shot.uri,
                     Modifier
                         .size(width = 64.dp, height = 108.dp)
-                        .clip(RoundedCornerShape(14.dp)),
+                        .clip(pixelCorners(14.dp)),
                 )
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {

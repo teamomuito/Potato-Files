@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -48,9 +47,10 @@ import io.github.teamomuito.octofiles.data.Expiry
 import io.github.teamomuito.octofiles.data.Kind
 import io.github.teamomuito.octofiles.data.Shot
 import io.github.teamomuito.octofiles.data.TidySettings
-import io.github.teamomuito.octofiles.ui.theme.GlassCard
-import io.github.teamomuito.octofiles.ui.theme.LiquidBackground
-import io.github.teamomuito.octofiles.ui.theme.LocalGlass
+import io.github.teamomuito.octofiles.ui.theme.PanelCard
+import io.github.teamomuito.octofiles.ui.theme.PixelBackground
+import io.github.teamomuito.octofiles.ui.theme.LocalPanel
+import io.github.teamomuito.octofiles.ui.theme.pixelCorners
 
 @Composable
 fun DetailScreen(id: Long, vm: MainViewModel, onBack: () -> Unit, onTrash: (Shot) -> Unit) {
@@ -58,7 +58,7 @@ fun DetailScreen(id: Long, vm: MainViewModel, onBack: () -> Unit, onTrash: (Shot
     val tidy by vm.tidy.collectAsStateWithLifecycle()
 
     Box(Modifier.fillMaxSize()) {
-        LiquidBackground()
+        PixelBackground()
         Column(
             Modifier
                 .fillMaxSize()
@@ -91,8 +91,8 @@ private fun DetailBody(detail: Detail, tidy: TidySettings, vm: MainViewModel, on
         shot.uri,
         Modifier
             .padding(horizontal = 16.dp)
-            .clip(RoundedCornerShape(24.dp))
-            .border(1.dp, LocalGlass.current.rim, RoundedCornerShape(24.dp))
+            .clip(pixelCorners(24.dp))
+            .border(2.dp, LocalPanel.current.rim, pixelCorners(24.dp))
             .clickable { openInGallery(context, shot.uri) },
     )
 
@@ -126,8 +126,8 @@ private fun DetailBody(detail: Detail, tidy: TidySettings, vm: MainViewModel, on
             }) { Text("copy all") }
         }
     }
-    GlassCard(
-        shape = RoundedCornerShape(22.dp),
+    PanelCard(
+        shape = pixelCorners(22.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp),
@@ -158,9 +158,9 @@ private fun TemporaryCard(shot: Shot, tidy: TidySettings, onKeep: (Boolean) -> U
             if (left <= 0) "its time is up, it goes in the next tidy." else "${Expiry.label(left)}, then off to the trash."
         }
     }
-    GlassCard(
-        shape = RoundedCornerShape(22.dp),
-        tint = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = if (LocalGlass.current.dark) 0.45f else 0.7f),
+    PanelCard(
+        shape = pixelCorners(22.dp),
+        tint = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = if (LocalPanel.current.dark) 0.45f else 0.7f),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),

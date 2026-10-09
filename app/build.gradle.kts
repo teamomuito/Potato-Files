@@ -94,7 +94,6 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.mlkit.text.recognition)
     implementation(libs.mlkit.barcode.scanning)
-    implementation(libs.haze)
     implementation(libs.androidx.biometric)
 
     testImplementation(libs.junit)

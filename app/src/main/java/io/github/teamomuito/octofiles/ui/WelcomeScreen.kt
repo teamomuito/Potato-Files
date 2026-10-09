@@ -28,7 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.teamomuito.octofiles.data.Access
-import io.github.teamomuito.octofiles.ui.theme.LiquidBackground
+import io.github.teamomuito.octofiles.ui.theme.PixelBackground
 
 @Composable
 fun WelcomeScreen(onAnswered: () -> Unit) {
@@ -43,7 +43,7 @@ fun WelcomeScreen(onAnswered: () -> Unit) {
     val blocked = asked && activity != null && !activity.shouldShowRequestPermissionRationale(Access.mediaPermission())
 
     Box(Modifier.fillMaxSize()) {
-        LiquidBackground()
+        PixelBackground()
         Column(
             modifier = Modifier
                 .fillMaxSize()

@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -55,8 +54,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import io.github.teamomuito.octofiles.BuildConfig
-import io.github.teamomuito.octofiles.ui.theme.GlassCard
-import io.github.teamomuito.octofiles.ui.theme.LiquidBackground
+import io.github.teamomuito.octofiles.ui.theme.PanelCard
+import io.github.teamomuito.octofiles.ui.theme.PixelBackground
+import io.github.teamomuito.octofiles.ui.theme.pixelCorners
 
 @Composable
 fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
@@ -71,7 +71,7 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
 
     Box(Modifier.fillMaxSize()) {
-        LiquidBackground()
+        PixelBackground()
         Column(
             Modifier
                 .fillMaxSize()
@@ -113,7 +113,7 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                                 selected = tidy.days == days,
                                 onClick = { vm.updateTidy { it.copy(days = days) } },
                                 label = { Text(label) },
-                                shape = RoundedCornerShape(50),
+                                shape = pixelCorners(50.dp),
                             )
                         }
                     }
@@ -316,7 +316,7 @@ private fun UpdateSection(state: UpdateState, current: String, onCheck: () -> Un
 
 @Composable
 private fun Section(content: @Composable ColumnScope.() -> Unit) {
-    GlassCard(
+    PanelCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp),
