@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -60,9 +62,22 @@ import kotlin.math.roundToInt
 private val PIXEL = 3.dp
 
 /** Corners as little staircases, like pixel art. A bigger [radius] takes more steps, up to three. */
-fun pixelCorners(radius: Dp): Shape = PixelShape(((radius / PIXEL) / 2f).roundToInt().coerceIn(1, 3))
+fun pixelCorners(radius: Dp): CornerBasedShape = PixelShape(((radius / PIXEL) / 2f).roundToInt().coerceIn(1, 3))
 
-private class PixelShape(private val steps: Int) : Shape {
+// a CornerBasedShape, because the Material shape theme only accepts those; the corner sizes are unused
+private class PixelShape(private val steps: Int) : CornerBasedShape(
+    CornerSize(0.dp),
+    CornerSize(0.dp),
+    CornerSize(0.dp),
+    CornerSize(0.dp),
+) {
+    override fun copy(
+        topStart: CornerSize,
+        topEnd: CornerSize,
+        bottomEnd: CornerSize,
+        bottomStart: CornerSize,
+    ): CornerBasedShape = PixelShape(steps)
+
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
         val n = steps
         val w = size.width
@@ -172,11 +187,14 @@ fun PixelBackground(modifier: Modifier = Modifier) {
             .fillMaxSize()
             .drawWithCache {
                 val step = 8.dp.toPx()
+                // read the size out here: inside buildList, `size` would mean the list's own size
+                val width = size.width
+                val height = size.height
                 val points = buildList {
                     var y = step / 2
-                    while (y < size.height) {
+                    while (y < height) {
                         var x = step / 2
-                        while (x < size.width) {
+                        while (x < width) {
                             add(Offset(x, y))
                             x += step
                         }
