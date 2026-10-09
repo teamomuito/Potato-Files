@@ -1,5 +1,6 @@
 package io.github.teamomuito.octofiles.data
 
+import android.os.Build
 import java.net.HttpURLConnection
 import java.net.URL
 import org.json.JSONObject
@@ -11,7 +12,8 @@ import org.json.JSONObject
 object Updates {
     private const val LATEST = "https://api.github.com/repos/teamomuito/Potato-Files/releases/latest"
 
-    data class Release(val version: String, val apkUrl: String?, val page: String)
+    /** [apkSize] is in bytes, 0 when GitHub doesn't say. [notes] is the release text as written. */
+    data class Release(val version: String, val apkUrl: String?, val apkSize: Long, val notes: String, val page: String)
 
     /** The newest published release, or null if GitHub can't be reached or nothing is published yet. */
     fun latest(): Release? {
@@ -22,12 +24,18 @@ object Updates {
             conn.setRequestProperty("Accept", "application/vnd.github+json")
             if (conn.responseCode != 200) return null
             val json = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
-            val assets = json.optJSONArray("assets")
-            val apk = (0 until (assets?.length() ?: 0))
-                .map { assets!!.getJSONObject(it) }
-                .firstOrNull { it.getString("name").endsWith("-release.apk") }
-                ?.getString("browser_download_url")
-            Release(json.getString("tag_name").removePrefix("v"), apk, json.getString("html_url"))
+            val assets = json.optJSONArray("assets")?.let { list -> (0 until list.length()).map { list.getJSONObject(it) } }.orEmpty()
+            // one apk per chip: pick the one for this phone, falling back to any release apk
+            val abi = Build.SUPPORTED_ABIS.firstOrNull { it == "arm64-v8a" || it == "armeabi-v7a" }
+            val asset = assets.firstOrNull { abi != null && it.getString("name").endsWith("-$abi-release.apk") }
+                ?: assets.firstOrNull { it.getString("name").endsWith("-release.apk") }
+            Release(
+                version = json.getString("tag_name").removePrefix("v"),
+                apkUrl = asset?.getString("browser_download_url"),
+                apkSize = asset?.optLong("size", 0L) ?: 0L,
+                notes = json.optString("body", "").trim(),
+                page = json.getString("html_url"),
+            )
         } catch (e: Exception) {
             null
         } finally {

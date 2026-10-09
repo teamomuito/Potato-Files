@@ -27,6 +27,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -34,6 +35,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.teamomuito.octofiles.data.Updates
@@ -193,41 +196,22 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
             }
 
             Section {
-                Text("updates", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    when (val s = update) {
-                        UpdateState.Idle -> "checks github for a newer release. it's just a request for the release list, nothing about this phone goes along."
-                        UpdateState.Checking -> "checking…"
-                        UpdateState.Current -> "you have the newest one."
-                        UpdateState.Failed -> "couldn't check. no network, or no release has been published yet."
-                        is UpdateState.Available -> "version ${s.release.version} is out."
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(10.dp))
-                val available = update as? UpdateState.Available
-                if (available != null) {
-                    FilledTonalButton(onClick = {
-                        val url = available.release.apkUrl ?: available.release.page
-                        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
-                    }) { Text("download") }
-                } else {
-                    OutlinedButton(
-                        enabled = update != UpdateState.Checking,
-                        onClick = {
-                            scope.launch {
-                                update = UpdateState.Checking
-                                val release = withContext(Dispatchers.IO) { Updates.latest() }
-                                update = when {
-                                    release == null -> UpdateState.Failed
-                                    Updates.isNewer(release.version, BuildConfig.VERSION_NAME) -> UpdateState.Available(release)
-                                    else -> UpdateState.Current
-                                }
+                UpdateSection(
+                    state = update,
+                    current = BuildConfig.VERSION_NAME,
+                    onCheck = {
+                        scope.launch {
+                            update = UpdateState.Checking
+                            val release = withContext(Dispatchers.IO) { Updates.latest() }
+                            update = when {
+                                release == null -> UpdateState.Failed
+                                Updates.isNewer(release.version, BuildConfig.VERSION_NAME) -> UpdateState.Available(release)
+                                else -> UpdateState.Current
                             }
-                        },
-                    ) { Text("check") }
-                }
+                        }
+                    },
+                    onOpen = { url -> runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } },
+                )
             }
 
             Column(
@@ -256,6 +240,78 @@ private sealed interface UpdateState {
     data object Current : UpdateState
     data object Failed : UpdateState
     data class Available(val release: Updates.Release) : UpdateState
+}
+
+@Composable
+private fun UpdateSection(state: UpdateState, current: String, onCheck: () -> Unit, onOpen: (String) -> Unit) {
+    val context = LocalContext.current
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Potato(boxSize = 56.dp, bob = state != UpdateState.Checking)
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                when (state) {
+                    UpdateState.Idle -> "updates"
+                    UpdateState.Checking -> "checking…"
+                    UpdateState.Current -> "you're up to date"
+                    UpdateState.Failed -> "couldn't check"
+                    is UpdateState.Available -> "version ${state.release.version} is out"
+                },
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                "you're on $current",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+
+    when (state) {
+        UpdateState.Checking -> {
+            Spacer(Modifier.height(12.dp))
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
+        UpdateState.Idle, UpdateState.Current, UpdateState.Failed -> {
+            Spacer(Modifier.height(10.dp))
+            Text(
+                when (state) {
+                    UpdateState.Idle -> "checks github for a newer release. only a request for the release list, nothing about this phone goes along."
+                    UpdateState.Current -> "nothing newer on github right now."
+                    else -> "no network, or no release has been published yet."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(10.dp))
+            OutlinedButton(onClick = onCheck) { Text(if (state == UpdateState.Idle) "check" else "check again") }
+        }
+        is UpdateState.Available -> {
+            val release = state.release
+            if (release.notes.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    release.notes,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 8,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                FilledTonalButton(onClick = { onOpen(release.apkUrl ?: release.page) }) {
+                    Text(if (release.apkSize > 0) "download · ${formatBytes(context, release.apkSize)}" else "download")
+                }
+                TextButton(onClick = { onOpen(release.page) }) { Text("details") }
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "android will ask before it installs. your data stays put when the new version installs over the old one.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 @Composable

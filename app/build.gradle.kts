@@ -19,9 +19,16 @@ android {
         versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 1
         versionName = (project.findProperty("versionName") as String?) ?: "0.1.0"
 
-        // phones are all ARM; the Intel builds of ML Kit's native code were a third of the apk
-        ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+    }
+
+    // one apk per phone chip instead of one fat apk: phones are all ARM, and each apk ships only its own
+    // native libs (ML Kit's were most of the size). arm64 covers almost every phone made since 2017.
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a")
+            isUniversalApk = false
         }
     }
 
