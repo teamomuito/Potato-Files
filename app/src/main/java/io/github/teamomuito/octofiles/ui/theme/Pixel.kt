@@ -52,7 +52,6 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -64,12 +63,13 @@ private val PIXEL = 3.dp
 /** Corners as little staircases, like pixel art. A bigger [radius] takes more steps, up to three. */
 fun pixelCorners(radius: Dp): CornerBasedShape = PixelShape(((radius / PIXEL) / 2f).roundToInt().coerceIn(1, 3))
 
-// a CornerBasedShape, because the Material shape theme only accepts those; the corner sizes are unused
+// a CornerBasedShape, because the Material shape theme only accepts those. Each corner is sized to
+// the whole staircase, so the base class resolves that size to pixels and hands it to createOutline.
 private class PixelShape(private val steps: Int) : CornerBasedShape(
-    CornerSize(0.dp),
-    CornerSize(0.dp),
-    CornerSize(0.dp),
-    CornerSize(0.dp),
+    CornerSize(PIXEL * steps.toFloat()),
+    CornerSize(PIXEL * steps.toFloat()),
+    CornerSize(PIXEL * steps.toFloat()),
+    CornerSize(PIXEL * steps.toFloat()),
 ) {
     override fun copy(
         topStart: CornerSize,
@@ -78,12 +78,19 @@ private class PixelShape(private val steps: Int) : CornerBasedShape(
         bottomStart: CornerSize,
     ): CornerBasedShape = PixelShape(steps)
 
-    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+    override fun createOutline(
+        size: Size,
+        topStart: Float,
+        topEnd: Float,
+        bottomEnd: Float,
+        bottomStart: Float,
+        layoutDirection: LayoutDirection,
+    ): Outline {
         val n = steps
         val w = size.width
         val h = size.height
-        // the steps never eat more than half of a side
-        val c = minOf(with(density) { PIXEL.toPx() }, w / (2 * n), h / (2 * n))
+        // the base class shrinks the corners on tiny shapes, so take the smallest one as the step size
+        val c = minOf(minOf(topStart, topEnd), minOf(bottomEnd, bottomStart)) / n
         val path = Path().apply {
             // walk the outline clockwise from the left edge: top-left, top-right, bottom-right, bottom-left
             moveTo(0f, n * c)
