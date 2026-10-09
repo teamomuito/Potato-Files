@@ -14,11 +14,9 @@ android {
         applicationId = "io.github.teamomuito.octofiles"
         minSdk = 30
         targetSdk = 35
-        // CI passes -PversionCode (the run number, so every build installs over the last)
-        // and -PversionName (the tag, for releases).
-        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 1
-        versionName = (project.findProperty("versionName") as String?) ?: "0.1.0"
-
+        // CI sets GITHUB_RUN_NUMBER, so every build gets a higher versionCode and installs over the last.
+        versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+        versionName = "0.1.0"
     }
 
     // one apk per phone chip instead of one fat apk: phones are all ARM, and each apk ships only its own

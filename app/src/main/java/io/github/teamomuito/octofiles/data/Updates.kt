@@ -6,16 +6,16 @@ import java.net.URL
 import org.json.JSONObject
 
 /**
- * Looks for a newer release on GitHub. It's one plain GET of the public releases API, with no
+ * Looks for a newer build on GitHub. It's one plain GET of the public releases API, with no
  * account and no token. Nothing about this phone is sent.
  */
 object Updates {
     private const val LATEST = "https://api.github.com/repos/teamomuito/Potato-Files/releases/latest"
 
-    /** [apkSize] is in bytes, 0 when GitHub doesn't say. [notes] is the release text as written. */
-    data class Release(val version: String, val apkUrl: String?, val apkSize: Long, val notes: String, val page: String)
+    /** [build] is the CI run number, the same number as the version code. [apkSize] is in bytes, 0 when unknown. */
+    data class Release(val build: Int, val apkUrl: String?, val apkSize: Long, val notes: String, val page: String)
 
-    /** The newest published release, or null if GitHub can't be reached or nothing is published yet. */
+    /** The newest published build, or null if GitHub can't be reached or nothing is published yet. */
     fun latest(): Release? {
         val conn = URL(LATEST).openConnection() as HttpURLConnection
         return try {
@@ -24,13 +24,14 @@ object Updates {
             conn.setRequestProperty("Accept", "application/vnd.github+json")
             if (conn.responseCode != 200) return null
             val json = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
+            val build = buildNumber(json.getString("tag_name")) ?: return null
             val assets = json.optJSONArray("assets")?.let { list -> (0 until list.length()).map { list.getJSONObject(it) } }.orEmpty()
-            // one apk per chip: pick the one for this phone, falling back to any release apk
+            // one apk per chip: pick the one for this phone, falling back to any apk
             val abi = Build.SUPPORTED_ABIS.firstOrNull { it == "arm64-v8a" || it == "armeabi-v7a" }
-            val asset = assets.firstOrNull { abi != null && it.getString("name").endsWith("-$abi-release.apk") }
-                ?: assets.firstOrNull { it.getString("name").endsWith("-release.apk") }
+            val asset = assets.firstOrNull { abi != null && it.getString("name").endsWith("-$abi.apk") }
+                ?: assets.firstOrNull { it.getString("name").endsWith(".apk") }
             Release(
-                version = json.getString("tag_name").removePrefix("v"),
+                build = build,
                 apkUrl = asset?.getString("browser_download_url"),
                 apkSize = asset?.optLong("size", 0L) ?: 0L,
                 notes = json.optString("body", "").trim(),
@@ -43,18 +44,6 @@ object Updates {
         }
     }
 
-    /** True when [remote] is a higher version than [local]. Compares dot-separated numbers, so 0.10.0 beats 0.9.0. */
-    fun isNewer(remote: String, local: String): Boolean {
-        val a = numbers(remote)
-        val b = numbers(local)
-        for (i in 0 until maxOf(a.size, b.size)) {
-            val x = a.getOrElse(i) { 0 }
-            val y = b.getOrElse(i) { 0 }
-            if (x != y) return x > y
-        }
-        return false
-    }
-
-    private fun numbers(version: String): List<Int> =
-        version.substringBefore('-').split('.').map { it.toIntOrNull() ?: 0 }
+    /** The build number from a release tag like "build-42". Null for any other tag. */
+    fun buildNumber(tag: String): Int? = tag.removePrefix("build-").takeIf { tag.startsWith("build-") }?.toIntOrNull()
 }

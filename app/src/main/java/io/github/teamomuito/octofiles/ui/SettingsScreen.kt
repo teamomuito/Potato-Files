@@ -198,14 +198,14 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
             Section {
                 UpdateSection(
                     state = update,
-                    current = BuildConfig.VERSION_NAME,
+                    current = "build ${BuildConfig.VERSION_CODE}",
                     onCheck = {
                         scope.launch {
                             update = UpdateState.Checking
                             val release = withContext(Dispatchers.IO) { Updates.latest() }
                             update = when {
                                 release == null -> UpdateState.Failed
-                                Updates.isNewer(release.version, BuildConfig.VERSION_NAME) -> UpdateState.Available(release)
+                                release.build > BuildConfig.VERSION_CODE -> UpdateState.Available(release)
                                 else -> UpdateState.Current
                             }
                         }
@@ -255,7 +255,7 @@ private fun UpdateSection(state: UpdateState, current: String, onCheck: () -> Un
                     UpdateState.Checking -> "checking…"
                     UpdateState.Current -> "you're up to date"
                     UpdateState.Failed -> "couldn't check"
-                    is UpdateState.Available -> "version ${state.release.version} is out"
+                    is UpdateState.Available -> "build ${state.release.build} is out"
                 },
                 style = MaterialTheme.typography.titleMedium,
             )

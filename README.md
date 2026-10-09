@@ -30,7 +30,9 @@ You need JDK 17 and the Android SDK (Android Studio sets it up).
 
 ## Get a release
 
-Releases are built by GitHub Actions and signed with the key in [`signing/`](signing). Grab the APK for your phone from the [releases page](../../releases). Most phones want the `arm64-v8a` one.
+Every push to the default branch builds the app and publishes a release, `build-N`, with the APKs and the changes since the last one. The newest is always at the [releases page](../../releases/latest). Most phones want the `arm64-v8a` APK. Only the 5 newest releases are kept.
+
+Releases are signed with the key in [`signing/`](signing), which is committed on purpose so each build installs over the last. Anyone with that key can sign an APK that installs as an update, so only download releases from this repo.
 
 ## License
 
