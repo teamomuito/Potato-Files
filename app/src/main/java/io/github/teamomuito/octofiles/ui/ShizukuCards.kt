@@ -43,8 +43,6 @@ import io.github.teamomuito.octofiles.ui.theme.LocalPanel
 import io.github.teamomuito.octofiles.ui.theme.PanelCard
 import kotlinx.coroutines.launch
 
-private const val LIST_MAX = 150
-
 /** The deeper clean that needs Shizuku: how to get it running until it is, then its two sections. */
 @Composable
 fun ShizukuSection(vm: CleanViewModel, open: Set<String>, onToggle: (String) -> Unit) {
@@ -108,6 +106,9 @@ private fun CorpseCard(vm: CleanViewModel, open: Boolean, onOpen: () -> Unit) {
     val found = (scan as? PrivScan.Done<Corpse>)?.items.orEmpty()
     val pickedItems = found.filter { it.path in picked }
     val pickedBytes = pickedItems.sumOf { it.bytes }
+    // only the app-data folders are ticked by default, so the header's select-all covers those and nothing else
+    val tickable = found.filter { it.kind.ticked }
+    val tickedPicked = tickable.count { it.path in picked }
     val size = when (scan) {
         is PrivScan.Done -> if (found.isEmpty()) "none" else formatBytes(context, found.sumOf { it.bytes })
         PrivScan.Working -> "…"
@@ -123,9 +124,9 @@ private fun CorpseCard(vm: CleanViewModel, open: Boolean, onOpen: () -> Unit) {
             onOpen = onOpen,
             leading = {
                 TriStateCheckbox(
-                    state = tristate(pickedItems.size, found.size),
-                    enabled = found.isNotEmpty() && !busy,
-                    onClick = { vm.setCorpses(found, pickedItems.size != found.size) },
+                    state = tristate(tickedPicked, tickable.size),
+                    enabled = tickable.isNotEmpty() && !busy,
+                    onClick = { vm.setCorpses(tickable, tickedPicked != tickable.size) },
                 )
             },
         )
@@ -142,7 +143,7 @@ private fun CorpseCard(vm: CleanViewModel, open: Boolean, onOpen: () -> Unit) {
                     if (found.isEmpty()) {
                         Text("no leftovers, all tidy.", style = MaterialTheme.typography.bodySmall)
                     }
-                    for (corpse in found.take(LIST_MAX)) {
+                    for (corpse in found) {
                         val detail = if (corpse.kind == CorpseKind.MEDIA) "${corpse.kind.label} · might be yours" else corpse.kind.label
                         PickRow(
                             name = corpse.pkg,
@@ -152,7 +153,6 @@ private fun CorpseCard(vm: CleanViewModel, open: Boolean, onOpen: () -> Unit) {
                             onToggle = { vm.toggleCorpse(corpse) },
                         )
                     }
-                    if (found.size > LIST_MAX) MoreNote(found.size - LIST_MAX)
                     Spacer(Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         TextButton(onClick = vm::scanCorpses, enabled = !busy) { Text("look again") }
@@ -252,7 +252,7 @@ private fun CacheCard(vm: CleanViewModel, open: Boolean, onOpen: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            for (cache in found.take(LIST_MAX)) {
+            for (cache in found) {
                 PickRow(
                     name = cache.label,
                     detail = cache.pkg,
@@ -261,7 +261,6 @@ private fun CacheCard(vm: CleanViewModel, open: Boolean, onOpen: () -> Unit) {
                     onToggle = { vm.toggleCache(cache) },
                 )
             }
-            if (found.size > LIST_MAX) MoreNote(found.size - LIST_MAX)
             if (pickedItems.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
                 Button(
@@ -312,16 +311,6 @@ private fun PickRow(name: String, detail: String, bytes: Long, checked: Boolean,
         Spacer(Modifier.width(8.dp))
         Text(formatBytes(context, bytes), style = MaterialTheme.typography.labelMedium)
     }
-}
-
-@Composable
-private fun MoreNote(more: Int) {
-    Text(
-        "and $more more, all ticked the same way as the ones above",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = 6.dp),
-    )
 }
 
 private fun tristate(ticked: Int, total: Int): ToggleableState = when {

@@ -3,23 +3,28 @@ package io.github.teamomuito.octofiles.data
 /** What a filter looks at: files, folders, or both. */
 enum class Target { FILES, FOLDERS, BOTH }
 
-/** One junk pattern. [matches] takes an entry's name and says whether it's junk. */
+/**
+ * One junk pattern. [matches] takes an entry's name and says whether it's junk. [tickedByDefault] says
+ * whether a fresh scan starts with its matches ticked. Anything that might be rescued data starts unticked.
+ */
 class SystemFilter(
     val id: String,
     val label: String,
     val body: String,
     val target: Target,
     val matches: (String) -> Boolean,
+    val tickedByDefault: Boolean = true,
 )
 
-/** A name pattern the person wrote, like `*.bak`. It only ever matches files, never folders. */
+/** A name pattern the person wrote, like `*.bak`. It only ever matches files, and nothing it matches starts ticked. */
 data class CustomFilter(val pattern: String) {
     fun toFilter(): SystemFilter = SystemFilter(
-        id = "custom:$pattern",
+        id = SystemFilters.CUSTOM_PREFIX + pattern,
         label = "custom: $pattern",
         body = "a pattern you wrote",
         target = Target.FILES,
         matches = SystemFilters.glob(pattern),
+        tickedByDefault = false,
     )
 
     companion object {
@@ -28,7 +33,7 @@ data class CustomFilter(val pattern: String) {
             pattern.isBlank() -> "type a pattern, like *.bak"
             pattern.any { it.isISOControl() } -> "no tabs or line breaks"
             '/' in pattern -> "patterns match file names, so no slashes"
-            pattern.none { it != '*' && it != '?' } -> "add a letter or a dot, a pattern of only wildcards would match everything"
+            pattern.none { it.isLetterOrDigit() } -> "add a letter or a number, or the pattern could match nearly every file"
             existing.any { it.pattern == pattern } -> "that one's already there"
             else -> null
         }
@@ -44,6 +49,8 @@ data class CustomFilter(val pattern: String) {
 }
 
 object SystemFilters {
+    const val CUSTOM_PREFIX = "custom:"
+
     /** The built-in filters. Only ones that work without root, on shared storage. */
     val STOCK: List<SystemFilter> = listOf(
         SystemFilter(
@@ -63,19 +70,18 @@ object SystemFilters {
         SystemFilter(
             id = "lost",
             label = "lost folders",
-            body = "folders a repair tool drops when it rescues files from a broken card or drive.",
+            body = "folders a repair tool makes when it rescues files from a broken card or drive. they can hold " +
+                "the only copy of something, so nothing is ticked for you.",
             target = Target.FOLDERS,
             matches = { it.equals("LOST.DIR", true) || it.equals("FOUND.000", true) },
+            tickedByDefault = false,
         ),
         SystemFilter(
             id = "trash",
             label = "trash folders",
-            body = "trash some apps and file managers keep in hidden folders.",
-            target = Target.BOTH,
-            matches = {
-                val lower = it.lowercase()
-                lower in setOf(".trash", ".trashes", ".recycle", "\$recycle.bin") || lower.startsWith(".trashed-")
-            },
+            body = "trash folders some apps and file managers keep.",
+            target = Target.FOLDERS,
+            matches = { name -> name.lowercase() in setOf(".trash", ".trashes", ".recycle", "\$recycle.bin") },
         ),
         SystemFilter(
             id = "office",
@@ -90,6 +96,19 @@ object SystemFilters {
     fun active(off: Set<String>, custom: List<CustomFilter>): List<SystemFilter> =
         STOCK.filter { it.id !in off } + custom.map { it.toFilter() }
 
+    /** What to show for a filter id, as stored on a junk item. */
+    fun labelOf(id: String?): String = when {
+        id == null -> "junk"
+        id.startsWith(CUSTOM_PREFIX) -> "custom: " + id.removePrefix(CUSTOM_PREFIX)
+        else -> STOCK.firstOrNull { it.id == id }?.label ?: "junk"
+    }
+
+    /** Whether matches of this filter start ticked on a fresh scan. Patterns the person wrote never do. */
+    fun tickedByDefault(id: String?): Boolean = when {
+        id == null || id.startsWith(CUSTOM_PREFIX) -> false
+        else -> STOCK.firstOrNull { it.id == id }?.tickedByDefault ?: false
+    }
+
     /** Turns a file name pattern into a matcher. `*` is any run of characters, `?` is one character. Case doesn't matter. */
     fun glob(pattern: String): (String) -> Boolean {
         val regex = Regex(
@@ -103,27 +122,32 @@ object SystemFilters {
 /** Walks a scanned tree and reports what the filters match. Documents is the person's own, so it's never walked. */
 object SystemCleaner {
 
-    fun find(root: DirNode, filters: List<SystemFilter>): List<JunkItem> {
+    /**
+     * [skip] is asked about each path first. A folder it returns true for is left alone, and nothing under it is looked at.
+     * Hidden folders are private space for apps, so they're matched by name but never walked into.
+     */
+    fun find(root: DirNode, filters: List<SystemFilter>, skip: (String) -> Boolean = { false }): List<JunkItem> {
         if (filters.isEmpty()) return emptyList()
         val out = ArrayList<JunkItem>()
-        visit(root, filters, out)
+        visit(root, filters, skip, out)
         return out
     }
 
-    private fun visit(dir: DirNode, filters: List<SystemFilter>, out: MutableList<JunkItem>) {
+    private fun visit(dir: DirNode, filters: List<SystemFilter>, skip: (String) -> Boolean, out: MutableList<JunkItem>) {
         for (d in dir.dirs) {
-            if (d.relative.equals("Documents", ignoreCase = true)) continue
+            if (d.relative.equals("Documents", ignoreCase = true) || skip(d.path)) continue
             val hit = filters.firstOrNull { it.target != Target.FILES && it.matches(d.name) }
-            // a matched folder goes whole, so nothing inside it is reported on its own
-            if (hit != null) {
-                out += JunkItem(JunkKind.SYSTEM, d.path, d.name, dir.relative, d.bytes, d.fileCount, isDir = true, modified = 0, filter = hit.label)
-            } else {
-                visit(d, filters, out)
+            when {
+                // a matched folder goes whole, so nothing inside it is reported on its own
+                hit != null -> out += JunkItem(JunkKind.SYSTEM, d.path, d.name, dir.relative, d.bytes, d.fileCount, isDir = true, modified = 0, filter = hit.id)
+                d.name.startsWith(".") -> Unit
+                else -> visit(d, filters, skip, out)
             }
         }
         for (f in dir.files) {
+            if (skip(f.path)) continue
             val hit = filters.firstOrNull { it.target != Target.FOLDERS && it.matches(f.name) } ?: continue
-            out += JunkItem(JunkKind.SYSTEM, f.path, f.name, dir.relative, f.size, 1, isDir = false, modified = f.modified, filter = hit.label)
+            out += JunkItem(JunkKind.SYSTEM, f.path, f.name, dir.relative, f.size, 1, isDir = false, modified = f.modified, filter = hit.id)
         }
     }
 }

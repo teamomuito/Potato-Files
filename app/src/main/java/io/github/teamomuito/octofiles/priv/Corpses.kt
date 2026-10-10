@@ -1,6 +1,7 @@
 package io.github.teamomuito.octofiles.priv
 
 import android.content.Context
+import kotlinx.coroutines.CancellationException
 
 /** The folders apps leave under Android/. [ticked] says whether a fresh scan starts with it selected. */
 enum class CorpseKind(val folder: String, val label: String, val body: String, val ticked: Boolean) {
@@ -62,7 +63,15 @@ object Corpses {
         var freed = 0L
         for (corpse in picked) {
             if (corpse.pkg in installed || pathOf(root, corpse.kind, corpse.pkg) != corpse.path) continue
-            if (PrivShell.exec(context, "rm -rf ${ShellText.quote(corpse.path)}").ok) freed += corpse.bytes
+            // a dropped connection ends the run, but what already went still counts
+            val ok = try {
+                PrivShell.exec(context, "rm -rf ${ShellText.quote(corpse.path)}").ok
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IllegalStateException) {
+                break
+            }
+            if (ok) freed += corpse.bytes
         }
         return freed
     }

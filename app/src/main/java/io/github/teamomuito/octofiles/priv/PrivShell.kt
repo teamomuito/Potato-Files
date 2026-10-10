@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.IBinder
+import android.os.UserHandle
 import io.github.teamomuito.octofiles.BuildConfig
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -69,7 +70,8 @@ object PrivShell {
 
     /** Every package on the phone, including ones kept as data after an uninstall. Fails rather than guessing with an empty list. */
     suspend fun installed(context: Context): Set<String> {
-        val out = exec(context, "pm list packages -u")
+        // scoped to the user this app runs as, since that's whose storage is being scanned
+        val out = exec(context, "pm list packages -u --user ${UserHandle.myUserId()}")
         val names = ShellText.parsePackages(out.text)
         check(out.ok && names.isNotEmpty()) { "shizuku couldn't list the installed apps" }
         return names

@@ -53,7 +53,7 @@ fun SystemCleanerCard(vm: CleanViewModel, open: Boolean, onOpen: () -> Unit) {
             Spacer(Modifier.height(10.dp))
             for (filter in SystemFilters.STOCK) {
                 val on = filter.id !in off
-                val count = found.count { it.filter == filter.label }
+                val count = found.count { it.filter == filter.id }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -88,6 +88,11 @@ fun SystemCleanerCard(vm: CleanViewModel, open: Boolean, onOpen: () -> Unit) {
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f),
                         )
+                        val matched = found.count { it.filter == SystemFilters.CUSTOM_PREFIX + c.pattern }
+                        if (matched > 0) {
+                            Text("$matched", style = MaterialTheme.typography.labelMedium)
+                            Spacer(Modifier.width(8.dp))
+                        }
                         TextButton(onClick = { vm.removeCustomFilter(c.pattern) }) { Text("remove") }
                     }
                 }
@@ -121,7 +126,8 @@ private fun AddPatternDialog(vm: CleanViewModel, onDone: () -> Unit) {
         text = {
             Column {
                 Text(
-                    "matches file names, not folders. * is any run of characters, ? is one.",
+                    "matches file names, not folders. * is any run of characters, ? is one. " +
+                        "matches show up in the list after your next scan, unticked, so you choose what goes.",
                     style = MaterialTheme.typography.bodySmall,
                 )
                 Spacer(Modifier.height(8.dp))

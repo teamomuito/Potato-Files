@@ -60,10 +60,14 @@ class CleanViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Paths ticked for deletion. */
     val selected = MutableStateFlow<Set<String>>(emptySet())
+
+    /** Paths the person unticked since the last scan. A rebuild never ticks these again. */
+    private val unticked = MutableStateFlow<Set<String>>(emptySet())
     val working = MutableStateFlow(false)
     val cleaned: StateFlow<Long> = Prefs.cleaned
 
     private var scanJob: Job? = null
+    private var rebuildJob: Job? = null
 
     /** The last walk of shared storage, kept so filter changes can rebuild the list without walking again. */
     @Volatile private var lastRoot: DirNode? = null
@@ -89,13 +93,15 @@ class CleanViewModel(app: Application) : AndroidViewModel(app) {
     fun scan() {
         if (!Access.hasAllFiles()) return
         scanJob?.cancel()
+        rebuildJob?.cancel()
         scanJob = viewModelScope.launch(Dispatchers.IO) {
             scan.value = ScanState.Scanning(0)
             val root = Cleaner.scan { seen -> scan.value = ScanState.Scanning(seen) }
             lastRoot = root
             val report = buildReport(root)
-            // the safe stuff starts ticked; large files are personal, so nothing there is ticked for you
-            selected.value = report.items.filter { it.kind != JunkKind.LARGE }.mapTo(HashSet()) { it.path }
+            // a fresh scan starts from the defaults, so nothing unticked before is remembered
+            unticked.value = emptySet()
+            selected.value = report.items.filter { defaultTicked(it) }.mapTo(HashSet()) { it.path }
             scan.value = ScanState.Done(report)
         }
     }
@@ -106,11 +112,16 @@ class CleanViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun toggle(item: JunkItem) = selected.update { if (item.path in it) it - item.path else it + item.path }
+    fun toggle(item: JunkItem) {
+        val on = item.path !in selected.value
+        selected.update { if (on) it + item.path else it - item.path }
+        unticked.update { if (on) it - item.path else it + item.path }
+    }
 
-    fun setAll(items: List<JunkItem>, on: Boolean) = selected.update { current ->
-        val paths = items.map { it.path }
-        if (on) current + paths else current - paths.toSet()
+    fun setAll(items: List<JunkItem>, on: Boolean) {
+        val paths = items.mapTo(HashSet()) { it.path }
+        selected.update { current -> if (on) current + paths else current - paths }
+        unticked.update { current -> if (on) current - paths else current + paths }
     }
 
     /** Deletes everything ticked, adds it to the running total, then looks again. Returns bytes freed. */
@@ -179,13 +190,21 @@ class CleanViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** The junk rules plus whatever the system cleaner filters match, minus anything a cache folder already covers. */
+    /** The junk rules plus whatever the system cleaner filters match. A path is never listed twice. */
     private fun buildReport(root: DirNode): JunkReport {
         val base = JunkRules.find(root, System.currentTimeMillis())
         val filters = SystemFilters.active(Prefs.systemOff.value, Prefs.systemCustom.value)
-        val covered = base.items.filter { it.kind == JunkKind.CACHE || it.kind == JunkKind.THUMBNAILS }.map { it.path + "/" }
-        val system = SystemCleaner.find(root, filters).filter { item -> covered.none { item.path.startsWith(it) } }
+        val taken = base.items.mapTo(HashSet()) { it.path }
+        val cacheFolders = base.items.filter { it.kind == JunkKind.CACHE || it.kind == JunkKind.THUMBNAILS }.map { it.path + "/" }
+        val system = SystemCleaner.find(root, filters) { path -> path in taken || cacheFolders.any { path.startsWith(it) } }
         return JunkReport(base.items + system, base.scannedFiles)
+    }
+
+    /** Whether an item starts ticked on a fresh scan. Big personal files never do, and neither does anything that might be rescued data. */
+    private fun defaultTicked(item: JunkItem): Boolean = when (item.kind) {
+        JunkKind.LARGE -> false
+        JunkKind.SYSTEM -> SystemFilters.tickedByDefault(item.filter)
+        else -> true
     }
 
     /** Turns a built-in system filter on or off, then rebuilds from the last walk. */
@@ -209,14 +228,18 @@ class CleanViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun rebuildFromLastWalk() {
+        // a walk is running. It reads the saved filters when it finishes, so there is nothing to rebuild yet
+        if (scanJob?.isActive == true) return
         val root = lastRoot ?: return
-        viewModelScope.launch(Dispatchers.IO) {
+        rebuildJob?.cancel()
+        rebuildJob = viewModelScope.launch(Dispatchers.IO) {
             val before = selected.value
+            val dismissed = unticked.value
             val known = (scan.value as? ScanState.Done)?.report?.items?.mapTo(HashSet<String>()) { it.path }.orEmpty()
             val report = buildReport(root)
-            // what was ticked stays ticked; anything new that isn't personal starts ticked
+            // what was ticked stays ticked, and what the person unticked stays unticked. New matches start from the defaults
             selected.value = report.items
-                .filter { it.path in before || (it.path !in known && it.kind != JunkKind.LARGE) }
+                .filter { it.path in before || (it.path !in known && it.path !in dismissed && defaultTicked(it)) }
                 .mapTo(HashSet<String>()) { it.path }
             scan.value = ScanState.Done(report)
         }
@@ -302,9 +325,10 @@ class CleanViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Android's own trim of every app's cache, asked for through Shizuku. Returns what the cache total dropped by. */
     suspend fun trimAllCaches(): Result<Long> {
-        val before = apps.value.orEmpty().sumOf { it.cacheBytes }
         privBusy.value = true
         val result = runCatching {
+            // read the totals now, not whatever was loaded when the screen opened
+            val before = withContext(Dispatchers.IO) { Apps.load(getApplication()).sumOf { it.cacheBytes } }
             val out = PrivShell.trimCaches(getApplication())
             check(out.ok) { out.text.trim().ifEmpty { "shizuku couldn't trim the caches" } }
             recountCaches(before)

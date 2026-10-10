@@ -35,7 +35,7 @@ data class JunkItem(
     val files: Int,
     val isDir: Boolean,
     val modified: Long,
-    /** For [JunkKind.SYSTEM]: the label of the system cleaner filter that matched it. */
+    /** For [JunkKind.SYSTEM]: the id of the system cleaner filter that matched it. See [SystemFilters.labelOf]. */
     val filter: String? = null,
 )
 

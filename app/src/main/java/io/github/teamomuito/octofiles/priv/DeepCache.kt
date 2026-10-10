@@ -1,6 +1,7 @@
 package io.github.teamomuito.octofiles.priv
 
 import android.content.Context
+import kotlinx.coroutines.CancellationException
 
 /** An app's cache folder on shared storage, Android/data/<pkg>/cache. [label] is what the screen shows. */
 data class ExternalCache(val pkg: String, val path: String, val bytes: Long, val label: String = pkg)
@@ -19,7 +20,12 @@ object DeepCache {
         .sortedByDescending { it.bytes }
 
     suspend fun scan(context: Context, root: String): List<ExternalCache> {
-        val out = PrivShell.exec(context, "du -sk ${ShellText.quote("$root/Android/data")}/*/cache 2>/dev/null")
+        // directories only: a plain file that happens to be called cache is not an app's cache folder
+        val folders = ShellText.quote("$root/Android/data")
+        val out = PrivShell.exec(
+            context,
+            "for d in $folders/*/cache; do [ -d \"\$d\" ] && du -sk \"\$d\"; done 2>/dev/null",
+        )
         return parse(root, ShellText.parseDu(out.text))
     }
 
@@ -28,7 +34,15 @@ object DeepCache {
         var freed = 0L
         for (cache in picked) {
             if (pathOf(root, cache.pkg) != cache.path) continue
-            if (PrivShell.exec(context, "rm -rf ${ShellText.quote(cache.path)}").ok) freed += cache.bytes
+            // a dropped connection ends the run, but what already went still counts
+            val ok = try {
+                PrivShell.exec(context, "rm -rf ${ShellText.quote(cache.path)}").ok
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IllegalStateException) {
+                break
+            }
+            if (ok) freed += cache.bytes
         }
         return freed
     }

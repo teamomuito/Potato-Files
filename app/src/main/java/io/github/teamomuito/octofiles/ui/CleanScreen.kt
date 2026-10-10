@@ -77,6 +77,7 @@ import io.github.teamomuito.octofiles.data.ClearAssist
 import io.github.teamomuito.octofiles.data.Expiry
 import io.github.teamomuito.octofiles.data.JunkItem
 import io.github.teamomuito.octofiles.data.JunkKind
+import io.github.teamomuito.octofiles.data.SystemFilters
 import io.github.teamomuito.octofiles.ui.theme.PanelCard
 import io.github.teamomuito.octofiles.ui.theme.LocalPanel
 import io.github.teamomuito.octofiles.ui.theme.bottomSpace
@@ -418,7 +419,8 @@ private fun kindText(kind: JunkKind): Pair<String, String> = when (kind) {
     JunkKind.EMPTY -> "empty folders" to
         "folders with nothing in them, usually left behind by apps you removed."
     JunkKind.SYSTEM -> "system junk" to
-        "matched by the system cleaner filters above. ticked by default, since their names say what they are."
+        "matched by the system cleaner filters further down this tab. most are ticked by default. rescued-data folders " +
+            "and patterns you wrote are not."
     JunkKind.LARGE -> "big files you haven't touched" to
         "over 50 MB and unchanged for 3 months. nothing here is ticked for you, pick what can go."
 }
@@ -502,7 +504,7 @@ private const val SHOW_MAX = 150
 private fun detail(context: Context, item: JunkItem): String {
     val where = item.where.ifEmpty { "main storage" }
     return when {
-        item.kind == JunkKind.SYSTEM -> "${item.filter ?: "junk"} · $where"
+        item.kind == JunkKind.SYSTEM -> "${SystemFilters.labelOf(item.filter)} · $where"
         item.kind == JunkKind.LARGE -> "$where · changed ${ago(item.modified)}"
         item.isDir && item.files > 0 -> "$where · ${plural(item.files, "file")}"
         else -> where

@@ -17,7 +17,7 @@ Built on [octo potato](https://github.com/teamomuito/octo-potato), so it also ca
 - 🗑️ **Trash** keeps things for 30 days before it's gone for good.
 - 🔐 **Vault** locks files with AES-256 and a key only this phone has. Unlock with your fingerprint.
 - 📡 **Wi-Fi server** is read-only and only runs while you start it. It's plain HTTP, so only use it on a network you trust.
-- 🛡️ **Permissions** are asked for only when a feature needs them. Shizuku is optional, and potato only connects to it when you open the leftovers or deep cache sections.
+- 🛡️ **Permissions** are asked for only when a feature needs them. Shizuku is optional. potato checks whether it's running each time you open the clean tab, and only binds to it when you open the leftovers or deep cache sections.
 
 ## Build it
 

@@ -41,7 +41,7 @@ class SystemCleanerTest {
         assertEquals("/sd/Stuff/__MACOSX", item.path)
         assertEquals(150L, item.bytes)
         assertEquals(2, item.files)
-        assertEquals("mac leftovers", item.filter)
+        assertEquals("mac", item.filter)
     }
 
     @Test fun `lost folders match folders only`() {
@@ -72,7 +72,7 @@ class SystemCleanerTest {
         val filters = SystemFilters.active(off = emptySet(), custom = listOf(CustomFilter("*.bak")))
         val items = find(root, filters)
         assertEquals(listOf("notes.BAK"), items.map { it.name })
-        assertEquals("custom: *.bak", items.single().filter)
+        assertEquals("custom:*.bak", items.single().filter)
     }
 
     @Test fun `question mark matches exactly one character`() {
@@ -103,9 +103,56 @@ class SystemCleanerTest {
         assertEquals(listOf(CustomFilter("*.old")), CustomFilter.decodeAll("*\n  *.old  \na/b\n\n"))
     }
 
+    @Test fun `hidden folders are matched by name but never walked into`() {
+        val root = dir("", dir(".obsidian", file(".obsidian/config.json", 5)))
+        val custom = SystemFilters.active(off = emptySet(), custom = listOf(CustomFilter("*.json")))
+        assertTrue(find(root, custom).isEmpty())
+    }
+
+    @Test fun `a matched hidden trash folder is still caught`() {
+        val root = dir("", dir(".Trash", file(".Trash/a", 4)))
+        assertEquals(".Trash", find(root).single().name)
+    }
+
+    @Test fun `the app's own trash is never looked into`() {
+        val root = dir("", dir(".OctoFilesTrash", file(".OctoFilesTrash/IMG_1.jpg", 9)))
+        val custom = SystemFilters.active(off = emptySet(), custom = listOf(CustomFilter("*.jpg")))
+        assertTrue(find(root, custom).isEmpty())
+    }
+
+    @Test fun `paths the caller skips are left alone with everything under them`() {
+        val root = dir("", dir("Stuff", dir("Stuff/__MACOSX", file("Stuff/__MACOSX/a", 1))))
+        assertTrue(SystemCleaner.find(root, all) { it == "/sd/Stuff/__MACOSX" }.isEmpty())
+    }
+
+    @Test fun `lost folders and patterns you wrote start unticked, the rest start ticked`() {
+        assertFalse(SystemFilters.tickedByDefault("lost"))
+        assertFalse(SystemFilters.tickedByDefault("custom:*.bak"))
+        assertFalse(SystemFilters.tickedByDefault("nope"))
+        assertTrue(SystemFilters.tickedByDefault("mac"))
+        assertTrue(SystemFilters.tickedByDefault("windows"))
+    }
+
+    @Test fun `labels come from ids`() {
+        assertEquals("mac leftovers", SystemFilters.labelOf("mac"))
+        assertEquals("custom: *.bak", SystemFilters.labelOf("custom:*.bak"))
+        assertEquals("junk", SystemFilters.labelOf(null))
+    }
+
+    @Test fun `a pattern with no letters or numbers is refused`() {
+        assertNotNull(CustomFilter.problem("*.*", emptyList()))
+        assertNotNull(CustomFilter.problem("*_*", emptyList()))
+        assertNull(CustomFilter.problem("*.jpg", emptyList()))
+    }
+
+    @Test fun `trash folders are only matched as folders`() {
+        assertEquals(Target.FOLDERS, stock("trash").target)
+    }
+
     @Test fun `stock filter ids are unique`() {
         assertEquals(SystemFilters.STOCK.size, SystemFilters.STOCK.map { it.id }.toSet().size)
-        assertTrue(stock("trash").matches(".trashed-123"))
+        assertFalse(stock("trash").matches(".trashed-123"))
+        assertTrue(stock("trash").matches(".Trash"))
         assertTrue(stock("trash").matches("\$RECYCLE.BIN"))
     }
 }
