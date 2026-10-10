@@ -36,4 +36,4 @@ Releases are signed with the key in [`signing/`](signing), which is committed on
 
 ## License
 
-MIT, same as octo potato. Pixelify Sans is under the SIL Open Font License, see [`licenses/`](licenses).
+MIT, same as octo potato. DotGothic16 is under the SIL Open Font License, see [`licenses/`](licenses). The look is borrowed from [Pictoclip](https://github.com/teamomuito/pictoclip), the DS menu clipboard app.

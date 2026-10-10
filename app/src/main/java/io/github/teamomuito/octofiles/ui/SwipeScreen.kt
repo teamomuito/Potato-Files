@@ -76,6 +76,7 @@ import io.github.teamomuito.octofiles.ui.theme.PanelCard
 import io.github.teamomuito.octofiles.ui.theme.LocalPanel
 import io.github.teamomuito.octofiles.ui.theme.Pastel
 import io.github.teamomuito.octofiles.ui.theme.bottomSpace
+import io.github.teamomuito.octofiles.ui.theme.PanelShape
 import io.github.teamomuito.octofiles.ui.theme.panel
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -224,7 +225,7 @@ private fun MonthRow(month: MonthSummary, onClick: () -> Unit) {
     }.joinToString(" · ")
 
     PanelCard(
-        shape = RectangleShape,
+        shape = PanelShape,
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -321,7 +322,7 @@ private fun MarkedChip(bytes: Long, count: Int, onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .panel(RectangleShape, LocalPanel.current, MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f))
+            .panel(PanelShape, LocalPanel.current, MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {

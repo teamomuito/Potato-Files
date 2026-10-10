@@ -1,7 +1,7 @@
 package io.github.teamomuito.octofiles.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -11,50 +11,50 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.teamomuito.octofiles.R
 
-// sampled from the DS chat room screen: a grey field, blue-grey header and footer, off-white rows
+// the DS menu palette, sampled from pictoclip: paper grid, slate header, pale footer, blue cursor
 private val Light = lightColorScheme(
-    primary = Color(0xFF4D7D94),
+    primary = Color(0xFF3E6DB0),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFC2D6DF),
-    onPrimaryContainer = Color(0xFF00131A),
-    secondary = Color(0xFF6C8793),
+    primaryContainer = Color(0xFFD5E2EE),
+    onPrimaryContainer = Color(0xFF1B3A63),
+    secondary = Color(0xFF4A6573),
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFD0DEE4),
-    onSecondaryContainer = Color(0xFF00131A),
+    secondaryContainer = Color(0xFFDCE6EB),
+    onSecondaryContainer = Color(0xFF2A3D47),
     tertiary = Color(0xFF4F7F5E),
     onTertiary = Color.White,
     tertiaryContainer = Color(0xFFD3E8DA),
     onTertiaryContainer = Color(0xFF0C2A18),
-    background = Color(0xFFABADAC),
-    onBackground = Color(0xFF00131A),
-    surface = Color(0xFFF8F8F8),
-    onSurface = Color(0xFF00131A),
-    surfaceVariant = Color(0xFFE2E6E8),
-    onSurfaceVariant = Color(0xFF3E5560),
+    background = Color(0xFFF4F5F6),
+    onBackground = Color(0xFF3A3F45),
+    surface = Color.White,
+    onSurface = Color(0xFF3A3F45),
+    surfaceVariant = Color(0xFFE3E6E9),
+    onSurfaceVariant = Color(0xFF5E656C),
     surfaceContainerLowest = Color.White,
-    surfaceContainerLow = Color(0xFFF2F4F5),
-    surfaceContainer = Color(0xFFECEFF1),
-    surfaceContainerHigh = Color(0xFFE2E6E8),
-    surfaceContainerHighest = Color(0xFFD6DCE0),
-    outline = Color(0xFF5B6E77),
-    outlineVariant = Color(0xFF797979),
+    surfaceContainerLow = Color(0xFFF8F9FA),
+    surfaceContainer = Color(0xFFEEF0F2),
+    surfaceContainerHigh = Color.White,
+    surfaceContainerHighest = Color(0xFFD9DDE1),
+    outline = Color(0xFF4A4F55),
+    outlineVariant = Color(0xFFC3C8CD),
 )
 
-// the same screens at night: the grey goes charcoal and the header and footer go deep blue-grey
+// the same screens at night: the paper goes slate, the header and footer go deeper
 private val Dark = darkColorScheme(
-    primary = Color(0xFF7FAFC4),
-    onPrimary = Color(0xFF00131A),
-    primaryContainer = Color(0xFF2B4A5B),
-    onPrimaryContainer = Color(0xFFD9E8EF),
+    primary = Color(0xFF7FA6DA),
+    onPrimary = Color(0xFF0E1A2B),
+    primaryContainer = Color(0xFF2E4A6E),
+    onPrimaryContainer = Color(0xFFD5E2EE),
     secondary = Color(0xFF9DB3BE),
     onSecondary = Color(0xFF00131A),
     secondaryContainer = Color(0xFF354852),
@@ -90,37 +90,49 @@ object Pastel {
     val butterInk = Color(0xFF6B5300)
 }
 
-/** Pixelify Sans, for headings only. One variable file, two weights. */
-@OptIn(ExperimentalTextApi::class)
-val PixelFont = FontFamily(
-    Font(R.font.pixelify_sans, FontWeight.Normal, variationSettings = FontVariation.Settings(FontVariation.weight(400))),
-    Font(R.font.pixelify_sans, FontWeight.Bold, variationSettings = FontVariation.Settings(FontVariation.weight(700))),
+/** DotGothic16, the pixel face the DS menus use for everything. It has one weight. */
+val DotFont = FontFamily(Font(R.font.dotgothic16))
+
+// every style gets the pixel face at regular weight, with no tracking, so text reads like the DS menus
+private fun pixel(style: TextStyle, size: TextUnit) = style.copy(
+    fontFamily = DotFont,
+    fontWeight = FontWeight.Normal,
+    fontSize = size,
+    letterSpacing = 0.sp,
 )
 
 private val base = Typography()
 
-// headings get the pixel face, everything you read stays in the plain sans
 private val OctoType = Typography(
-    displaySmall = base.displaySmall.copy(fontFamily = PixelFont, fontWeight = FontWeight.Bold),
-    headlineMedium = base.headlineMedium.copy(fontFamily = PixelFont, fontWeight = FontWeight.Bold),
-    headlineSmall = base.headlineSmall.copy(fontFamily = PixelFont, fontWeight = FontWeight.Bold),
-    titleLarge = base.titleLarge.copy(fontFamily = PixelFont, fontWeight = FontWeight.Bold),
-    titleMedium = base.titleMedium.copy(fontWeight = FontWeight.Medium, fontSize = 16.sp),
-    bodyLarge = base.bodyLarge.copy(fontSize = 16.sp),
-    bodyMedium = base.bodyMedium.copy(fontSize = 14.sp),
-    bodySmall = base.bodySmall.copy(fontSize = 12.sp),
-    labelLarge = base.labelLarge.copy(fontWeight = FontWeight.Medium, fontSize = 14.sp),
-    labelMedium = base.labelMedium.copy(fontSize = 12.sp),
-    labelSmall = base.labelSmall.copy(fontSize = 11.sp),
+    displayLarge = pixel(base.displayLarge, 48.sp),
+    displayMedium = pixel(base.displayMedium, 40.sp),
+    displaySmall = pixel(base.displaySmall, 32.sp),
+    headlineLarge = pixel(base.headlineLarge, 28.sp),
+    headlineMedium = pixel(base.headlineMedium, 24.sp),
+    headlineSmall = pixel(base.headlineSmall, 22.sp),
+    titleLarge = pixel(base.titleLarge, 20.sp),
+    titleMedium = pixel(base.titleMedium, 16.sp),
+    titleSmall = pixel(base.titleSmall, 14.sp),
+    bodyLarge = pixel(base.bodyLarge, 16.sp),
+    bodyMedium = pixel(base.bodyMedium, 14.sp),
+    bodySmall = pixel(base.bodySmall, 12.sp),
+    labelLarge = pixel(base.labelLarge, 14.sp),
+    labelMedium = pixel(base.labelMedium, 12.sp),
+    labelSmall = pixel(base.labelSmall, 11.sp),
 )
 
-// square everywhere: the DS windows have no rounded corners
+/**
+ * The DS panels are cut at the corners, not rounded: a 2dp chamfer that matches the rim width.
+ * Every Material shape uses it too, so cards and dialogs get the same notch.
+ */
+val PanelShape = CutCornerShape(2.dp)
+
 private val OctoShapes = Shapes(
-    extraSmall = RoundedCornerShape(0.dp),
-    small = RoundedCornerShape(0.dp),
-    medium = RoundedCornerShape(0.dp),
-    large = RoundedCornerShape(0.dp),
-    extraLarge = RoundedCornerShape(0.dp),
+    extraSmall = PanelShape,
+    small = PanelShape,
+    medium = PanelShape,
+    large = PanelShape,
+    extraLarge = PanelShape,
 )
 
 @Composable
