@@ -377,7 +377,7 @@ private fun Scanning(files: Int) {
 }
 
 @Composable
-internal fun Section(content: @Composable () -> Unit) {
+private fun Section(content: @Composable () -> Unit) {
     PanelCard(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) { content() }
     }
