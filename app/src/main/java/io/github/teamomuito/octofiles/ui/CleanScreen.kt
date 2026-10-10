@@ -234,7 +234,7 @@ fun CleanScreen(vm: CleanViewModel, onSettings: () -> Unit) {
                 when (val s = scan) {
                     is ScanState.Scanning -> item(key = "scanning") { Scanning(s.files) }
                     is ScanState.Done -> {
-                        for (kind in listOf(JunkKind.CACHE, JunkKind.THUMBNAILS, JunkKind.EMPTY, JunkKind.LARGE)) {
+                        for (kind in listOf(JunkKind.CACHE, JunkKind.THUMBNAILS, JunkKind.EMPTY, JunkKind.SYSTEM, JunkKind.LARGE)) {
                             val items = s.report.of(kind)
                             item(key = kind.name) {
                                 JunkCard(
@@ -254,6 +254,10 @@ fun CleanScreen(vm: CleanViewModel, onSettings: () -> Unit) {
 
                 item(key = "shizuku") {
                     ShizukuSection(vm, open = expanded, onToggle = { toggleOpen(it) })
+                }
+
+                item(key = "system") {
+                    SystemCleanerCard(vm, open = "system" in expanded, onOpen = { toggleOpen("system") })
                 }
 
                 if (usage && appList != null) {
@@ -413,6 +417,8 @@ private fun kindText(kind: JunkKind): Pair<String, String> = when (kind) {
         "little preview copies your gallery made. they come back on their own if they're needed."
     JunkKind.EMPTY -> "empty folders" to
         "folders with nothing in them, usually left behind by apps you removed."
+    JunkKind.SYSTEM -> "system junk" to
+        "matched by the system cleaner filters above. ticked by default, since their names say what they are."
     JunkKind.LARGE -> "big files you haven't touched" to
         "over 50 MB and unchanged for 3 months. nothing here is ticked for you, pick what can go."
 }
@@ -496,6 +502,7 @@ private const val SHOW_MAX = 150
 private fun detail(context: Context, item: JunkItem): String {
     val where = item.where.ifEmpty { "main storage" }
     return when {
+        item.kind == JunkKind.SYSTEM -> "${item.filter ?: "junk"} · $where"
         item.kind == JunkKind.LARGE -> "$where · changed ${ago(item.modified)}"
         item.isDir && item.files > 0 -> "$where · ${plural(item.files, "file")}"
         else -> where

@@ -57,7 +57,7 @@ object Cleaner {
             val ok = when (item.kind) {
                 // only removes folders; if a file showed up since the scan, it stays and so does its folder
                 JunkKind.EMPTY -> deleteEmptyTree(file)
-                JunkKind.CACHE, JunkKind.THUMBNAILS -> if (file.isDirectory) file.deleteRecursively() else file.delete()
+                JunkKind.CACHE, JunkKind.THUMBNAILS, JunkKind.SYSTEM -> if (file.isDirectory) file.deleteRecursively() else file.delete()
                 JunkKind.LARGE -> file.isFile && file.delete()
             }
             if (ok) freed += item.bytes

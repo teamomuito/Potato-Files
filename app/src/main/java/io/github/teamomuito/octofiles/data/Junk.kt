@@ -23,7 +23,7 @@ class DirNode(
     val isEmpty: Boolean get() = complete && fileCount == 0 && !hasHidden
 }
 
-enum class JunkKind { CACHE, THUMBNAILS, EMPTY, LARGE }
+enum class JunkKind { CACHE, THUMBNAILS, EMPTY, LARGE, SYSTEM }
 
 data class JunkItem(
     val kind: JunkKind,
@@ -35,6 +35,8 @@ data class JunkItem(
     val files: Int,
     val isDir: Boolean,
     val modified: Long,
+    /** For [JunkKind.SYSTEM]: the label of the system cleaner filter that matched it. */
+    val filter: String? = null,
 )
 
 data class JunkReport(val items: List<JunkItem>, val scannedFiles: Int) {

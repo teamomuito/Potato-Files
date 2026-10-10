@@ -39,6 +39,14 @@ object Prefs {
     private val _skipTrash = MutableStateFlow(false)
     val skipTrash: StateFlow<Boolean> = _skipTrash
 
+    /** Ids of the built-in system cleaner filters the person has turned off. */
+    private val _systemOff = MutableStateFlow<Set<String>>(emptySet())
+    val systemOff: StateFlow<Set<String>> = _systemOff
+
+    /** The person's own name patterns for the system cleaner. */
+    private val _systemCustom = MutableStateFlow<List<CustomFilter>>(emptyList())
+    val systemCustom: StateFlow<List<CustomFilter>> = _systemCustom
+
     fun init(context: Context) {
         if (::prefs.isInitialized) return
         prefs = context.getSharedPreferences("octo", Context.MODE_PRIVATE)
@@ -52,6 +60,8 @@ object Prefs {
         _freed.value = Freed(prefs.getLong("freedBytes", 0), prefs.getInt("freedItems", 0))
         _skipTrash.value = prefs.getBoolean("skipTrash", false)
         _cleaned.value = prefs.getLong("cleanedBytes", 0)
+        _systemOff.value = prefs.getStringSet("systemOff", emptySet()).orEmpty().toSet()
+        _systemCustom.value = CustomFilter.decodeAll(prefs.getString("systemCustom", "").orEmpty())
     }
 
     @Synchronized
@@ -71,6 +81,19 @@ object Prefs {
     fun setSkipTrash(on: Boolean) {
         _skipTrash.value = on
         prefs.edit().putBoolean("skipTrash", on).apply()
+    }
+
+    @Synchronized
+    fun setStockFilter(id: String, on: Boolean) {
+        val next = if (on) _systemOff.value - id else _systemOff.value + id
+        _systemOff.value = next
+        prefs.edit().putStringSet("systemOff", next).apply()
+    }
+
+    @Synchronized
+    fun setCustomFilters(next: List<CustomFilter>) {
+        _systemCustom.value = next
+        prefs.edit().putString("systemCustom", CustomFilter.encodeAll(next)).apply()
     }
 
     fun updateTidy(change: (TidySettings) -> TidySettings) {

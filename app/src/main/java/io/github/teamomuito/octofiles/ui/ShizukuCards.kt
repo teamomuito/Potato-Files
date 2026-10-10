@@ -114,7 +114,7 @@ private fun CorpseCard(vm: CleanViewModel, open: Boolean, onOpen: () -> Unit) {
         else -> ""
     }
 
-    PrivSection {
+    CardSection {
         SectionHeader(
             title = if (found.isEmpty()) "leftovers from uninstalled apps" else "leftovers · ${found.size}",
             body = "folders apps left in android/data, obb and media after you removed them. nothing goes until you tap remove.",
@@ -208,7 +208,7 @@ private fun CacheCard(vm: CleanViewModel, open: Boolean, onOpen: () -> Unit) {
         else -> ""
     }
 
-    PrivSection {
+    CardSection {
         SectionHeader(
             title = "app caches, deep",
             body = "cache folders apps keep on shared storage. the button clears every app's cache at once, the way android's own trim does.",
@@ -281,9 +281,9 @@ private fun CacheCard(vm: CleanViewModel, open: Boolean, onOpen: () -> Unit) {
     }
 }
 
-/** Same look as the clean tab's cards. Its own name, so it can't clash with the Section helpers in the other screens. */
+/** The card wrapper for the clean tab's newer sections. Named apart from the Section helpers in the other screens, which it would clash with. */
 @Composable
-private fun PrivSection(content: @Composable () -> Unit) {
+internal fun CardSection(content: @Composable () -> Unit) {
     PanelCard(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) { content() }
     }

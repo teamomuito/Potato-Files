@@ -9,11 +9,15 @@ import io.github.teamomuito.octofiles.data.AppRules
 import io.github.teamomuito.octofiles.data.AppUsage
 import io.github.teamomuito.octofiles.data.Apps
 import io.github.teamomuito.octofiles.data.Cleaner
+import io.github.teamomuito.octofiles.data.CustomFilter
+import io.github.teamomuito.octofiles.data.DirNode
 import io.github.teamomuito.octofiles.data.JunkItem
 import io.github.teamomuito.octofiles.data.JunkKind
 import io.github.teamomuito.octofiles.data.JunkReport
 import io.github.teamomuito.octofiles.data.JunkRules
 import io.github.teamomuito.octofiles.data.Prefs
+import io.github.teamomuito.octofiles.data.SystemCleaner
+import io.github.teamomuito.octofiles.data.SystemFilters
 import io.github.teamomuito.octofiles.files.Fs
 import io.github.teamomuito.octofiles.priv.Corpse
 import io.github.teamomuito.octofiles.priv.Corpses
@@ -61,6 +65,9 @@ class CleanViewModel(app: Application) : AndroidViewModel(app) {
 
     private var scanJob: Job? = null
 
+    /** The last walk of shared storage, kept so filter changes can rebuild the list without walking again. */
+    @Volatile private var lastRoot: DirNode? = null
+
     // shizuku: the deeper clean, without root. Only looked at when one of its sections is opened.
     val shizuku = MutableStateFlow(ShizukuState.MISSING)
     val corpses = MutableStateFlow<PrivScan<Corpse>>(PrivScan.Idle)
@@ -85,7 +92,8 @@ class CleanViewModel(app: Application) : AndroidViewModel(app) {
         scanJob = viewModelScope.launch(Dispatchers.IO) {
             scan.value = ScanState.Scanning(0)
             val root = Cleaner.scan { seen -> scan.value = ScanState.Scanning(seen) }
-            val report = JunkRules.find(root, System.currentTimeMillis())
+            lastRoot = root
+            val report = buildReport(root)
             // the safe stuff starts ticked; large files are personal, so nothing there is ticked for you
             selected.value = report.items.filter { it.kind != JunkKind.LARGE }.mapTo(HashSet()) { it.path }
             scan.value = ScanState.Done(report)
@@ -168,6 +176,49 @@ class CleanViewModel(app: Application) : AndroidViewModel(app) {
     fun afterUninstall(pkg: String) {
         if (!Apps.isInstalled(getApplication(), pkg)) {
             apps.update { list -> list?.filter { it.pkg != pkg } }
+        }
+    }
+
+    /** The junk rules plus whatever the system cleaner filters match, minus anything a cache folder already covers. */
+    private fun buildReport(root: DirNode): JunkReport {
+        val base = JunkRules.find(root, System.currentTimeMillis())
+        val filters = SystemFilters.active(Prefs.systemOff.value, Prefs.systemCustom.value)
+        val covered = base.items.filter { it.kind == JunkKind.CACHE || it.kind == JunkKind.THUMBNAILS }.map { it.path + "/" }
+        val system = SystemCleaner.find(root, filters).filter { item -> covered.none { item.path.startsWith(it) } }
+        return JunkReport(base.items + system, base.scannedFiles)
+    }
+
+    /** Turns a built-in system filter on or off, then rebuilds from the last walk. */
+    fun setStockFilter(id: String, on: Boolean) {
+        Prefs.setStockFilter(id, on)
+        rebuildFromLastWalk()
+    }
+
+    /** Saves a pattern from the add dialog. Returns why it was refused, or null once it's saved. */
+    fun addCustomFilter(text: String): String? {
+        val pattern = text.trim()
+        CustomFilter.problem(pattern, Prefs.systemCustom.value)?.let { return it }
+        Prefs.setCustomFilters(Prefs.systemCustom.value + CustomFilter(pattern))
+        rebuildFromLastWalk()
+        return null
+    }
+
+    fun removeCustomFilter(pattern: String) {
+        Prefs.setCustomFilters(Prefs.systemCustom.value.filter { it.pattern != pattern })
+        rebuildFromLastWalk()
+    }
+
+    private fun rebuildFromLastWalk() {
+        val root = lastRoot ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            val before = selected.value
+            val known = (scan.value as? ScanState.Done)?.report?.items?.mapTo(HashSet<String>()) { it.path }.orEmpty()
+            val report = buildReport(root)
+            // what was ticked stays ticked; anything new that isn't personal starts ticked
+            selected.value = report.items
+                .filter { it.path in before || (it.path !in known && it.kind != JunkKind.LARGE) }
+                .mapTo(HashSet<String>()) { it.path }
+            scan.value = ScanState.Done(report)
         }
     }
 
