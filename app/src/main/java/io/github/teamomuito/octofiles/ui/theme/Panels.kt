@@ -4,22 +4,22 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
@@ -32,18 +32,18 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -51,18 +51,40 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-/** A window: a solid fill with a thin grey edge. Nothing is see-through. */
+/** The colors of one surface. The light set is sampled from pictoclip's DS menu. */
 @Immutable
 data class Panel(
     val fill: Color,
     val rim: Color,
+    val shadow: Color,
+    val grid: Color,
+    val bar: Color,
     val dark: Boolean,
 )
 
-val LightPanel = Panel(fill = Color(0xFFF8F8F8), rim = Color(0xFF0C0E0D), dark = false)
+val LightPanel = Panel(
+    fill = Color.White,
+    rim = Color(0xFF4A4F55),
+    shadow = Color(0xFFC3C8CD),
+    grid = Color(0xFFE1E4E7),
+    bar = Color(0xFFE3E6E9),
+    dark = false,
+)
 
-val DarkPanel = Panel(fill = Color(0xFF3A4449), rim = Color(0xFF0E1416), dark = true)
+val DarkPanel = Panel(
+    fill = Color(0xFF3A4449),
+    rim = Color(0xFF0E1416),
+    shadow = Color(0xFF252B2F),
+    grid = Color(0xFF353C41),
+    bar = Color(0xFF23292D),
+    dark = true,
+)
 
 val LocalPanel = staticCompositionLocalOf { LightPanel }
 
@@ -72,12 +94,29 @@ val LocalBarSpace = compositionLocalOf { 0.dp }
 @Composable
 fun bottomSpace(): Dp = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + LocalBarSpace.current
 
-/** A panel's fill and edge. [tint] goes over the fill, so the panel stays solid underneath. */
+/** The rim width, and the size of the notch at each corner. */
+private val EDGE = 2.dp
+
+/** The blue of the selection brackets, and the lit tab. */
+val CursorBlue = Color(0xFF3E6DB0)
+
+/**
+ * A panel: a 2dp rim cut at the corners, a solid fill inside, and a darker strip along the bottom
+ * and right, like the DS buttons. [tint] goes over the fill, so the panel stays solid underneath.
+ */
 fun Modifier.panel(shape: Shape, panel: Panel, tint: Color? = null): Modifier =
-    clip(shape)
-        .background(panel.fill)
-        .then(if (tint != null) Modifier.background(tint) else Modifier)
-        .border(1.dp, panel.rim, shape)
+    clip(shape).drawWithCache {
+        val edge = EDGE.toPx()
+        val outline = shape.createOutline(size, layoutDirection, this)
+        val inner = Rect(edge, edge, size.width - edge, size.height - edge)
+        onDrawBehind {
+            drawOutline(outline, panel.rim)
+            drawRect(panel.fill, inner.topLeft, inner.size)
+            if (tint != null) drawRect(tint, inner.topLeft, inner.size)
+            drawRect(panel.shadow, Offset(inner.left, inner.bottom - edge), Size(inner.width, edge))
+            drawRect(panel.shadow, Offset(inner.right - edge, inner.top), Size(edge, inner.height))
+        }
+    }
 
 /** Clickable that dips a little while pressed. */
 @Composable
@@ -100,7 +139,7 @@ fun Squishy(modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () 
 @Composable
 fun PanelCard(
     modifier: Modifier = Modifier,
-    shape: Shape = RectangleShape,
+    shape: Shape = PanelShape,
     tint: Color? = null,
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
@@ -112,29 +151,28 @@ fun PanelCard(
     }
 }
 
-/** The pale grid the DS menus sit on. Static, so nothing redraws while scrolling. */
+/** The pale grid the DS menus sit on, in 16dp cells with one-pixel lines. Static, so nothing redraws while scrolling. */
 @Composable
 fun GridBackground(modifier: Modifier = Modifier) {
     val panel = LocalPanel.current
     val base = MaterialTheme.colorScheme.background
-    val line = if (panel.dark) Color(0xFF353C41) else Color(0xFFB4B6B5)
     Box(
         modifier
             .fillMaxSize()
             .drawWithCache {
-                val step = 8.dp.toPx()
+                val step = 16.dp.toPx()
                 val width = size.width
                 val height = size.height
                 onDrawBehind {
                     drawRect(base)
                     var x = 0f
                     while (x <= width) {
-                        drawLine(line, Offset(x, 0f), Offset(x, height), strokeWidth = 1.dp.toPx())
+                        drawLine(panel.grid, Offset(x, 0f), Offset(x, height), strokeWidth = 1f)
                         x += step
                     }
                     var y = 0f
                     while (y <= height) {
-                        drawLine(line, Offset(0f, y), Offset(width, y), strokeWidth = 1.dp.toPx())
+                        drawLine(panel.grid, Offset(0f, y), Offset(width, y), strokeWidth = 1f)
                         y += step
                     }
                 }
@@ -145,70 +183,70 @@ fun GridBackground(modifier: Modifier = Modifier) {
 data class TabItem(val label: String, val icon: ImageVector)
 
 /**
- * The title strip across the top, like the DS's header bar. It takes the status bar itself,
- * so screens below it don't pad for the status bar a second time.
+ * The title bar across the top, like the DS menu's header: a slate gradient, the screen name on the
+ * left and the clock on the right. It takes the status bar itself, so screens below don't pad for it.
  */
 @Composable
 fun DsHeader(title: String, modifier: Modifier = Modifier) {
     val dark = LocalPanel.current.dark
-    val ink = if (dark) Color(0xFFE6EEF2) else Color(0xFF00131A)
-    val edge = if (dark) Color(0xFF0E1416) else Color(0xFF797979)
+    val ink = if (dark) Color(0xFFE6EEF2) else Color.White
     val fill = Brush.verticalGradient(
-        if (dark) listOf(Color(0xFF4A5C68), Color(0xFF34434D)) else listOf(Color(0xFFC2D6DF), Color(0xFFA2B9C1)),
+        if (dark) listOf(Color(0xFF3E525C), Color(0xFF2C3B44)) else listOf(Color(0xFF6F8C99), Color(0xFF4A6573)),
     )
-    Box(
-        modifier
-            .fillMaxWidth()
-            .background(fill)
-            .statusBarsPadding()
-            .height(HEADER_HEIGHT)
-            .drawWithContent {
-                drawContent()
-                drawLine(edge, Offset(0f, size.height), Offset(size.width, size.height), strokeWidth = 1.dp.toPx())
-            },
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(title, style = MaterialTheme.typography.titleMedium, color = ink)
+    Box(modifier.fillMaxWidth().background(fill).statusBarsPadding()) {
+        Row(
+            Modifier.fillMaxWidth().height(HEADER_HEIGHT).padding(horizontal = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleSmall, color = ink, maxLines = 1)
+            DsClock(ink)
+        }
     }
 }
 
+/** The clock in the header's corner, as on the DS menus. It ticks every ten seconds. */
+@Composable
+private fun DsClock(color: Color) {
+    val now by produceState(System.currentTimeMillis()) {
+        while (true) {
+            value = System.currentTimeMillis()
+            delay(10_000)
+        }
+    }
+    val format = remember { SimpleDateFormat("HH:mm  MM/dd", Locale.getDefault()) }
+    Text(format.format(Date(now)), style = MaterialTheme.typography.titleSmall, color = color)
+}
+
 /**
- * The bottom bar, like the DS's footer: a steel-blue gradient with a dark top edge, one flat
- * cell per tab, and the selected cell lit.
+ * The bottom bar, like the DS button row: a flat pale strip with one notched cell per tab.
+ * The lit cell gets the pressed fill and the blue brackets.
  */
 @Composable
 fun DsTabBar(tabs: List<TabItem>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
-    val dark = LocalPanel.current.dark
-    val edge = if (dark) Color(0xFF0A1820) else Color(0xFF00111B)
-    val bar = Brush.verticalGradient(
-        if (dark) listOf(Color(0xFF3A5E74), Color(0xFF26404F)) else listOf(Color(0xFF4D7D94), Color(0xFFC3D4DC)),
-    )
-    val lit = Color(0x4000131A)
-    Box(
+    val panel = LocalPanel.current
+    val ink = MaterialTheme.colorScheme.onSurface
+    Row(
         modifier
             .fillMaxWidth()
-            .background(bar)
+            .background(panel.bar)
             .navigationBarsPadding()
-            .drawWithContent {
-                drawContent()
-                drawLine(edge, Offset(0f, 0f), Offset(size.width, 0f), strokeWidth = 1.dp.toPx())
-            },
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
-        Row(Modifier.fillMaxWidth().height(BAR_HEIGHT)) {
-            tabs.forEachIndexed { i, tab ->
-                val on = i == selected
-                val tint = Color.White
-                Squishy(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .background(if (on) lit else Color.Transparent),
-                    onClick = { onSelect(i) },
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(tab.icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
-                        Text(tab.label, style = MaterialTheme.typography.labelMedium, color = tint)
-                    }
+        tabs.forEachIndexed { i, tab ->
+            val on = i == selected
+            Squishy(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(BAR_CELL)
+                    .panel(PanelShape, panel, tint = if (on) MaterialTheme.colorScheme.primaryContainer else null)
+                    .then(if (on) Modifier.selectionBrackets() else Modifier),
+                onClick = { onSelect(i) },
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(tab.icon, contentDescription = null, tint = ink, modifier = Modifier.size(20.dp))
+                    // the pixel face is half as wide as it is tall, so the longest label needs a step smaller to fit a cell
+                    Text(tab.label, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = ink, maxLines = 1)
                 }
             }
         }
@@ -216,11 +254,12 @@ fun DsTabBar(tabs: List<TabItem>, selected: Int, onSelect: (Int) -> Unit, modifi
 }
 
 /** Height of the bottom bar, and the room lists keep clear of it. */
-val BAR_HEIGHT = 56.dp
+val BAR_CELL = 52.dp
+val BAR_HEIGHT = BAR_CELL + 16.dp
 val BAR_SPACE = BAR_HEIGHT + 8.dp
 
-/** The title strip, not counting the status bar. */
-val HEADER_HEIGHT = 48.dp
+/** The title bar, not counting the status bar. */
+val HEADER_HEIGHT = 32.dp
 
 /** A round button, for the swipe card controls. */
 @Composable
@@ -246,22 +285,30 @@ fun PanelCircle(
     }
 }
 
-/** Four corner brackets around a selected item, like the cursor on the DS menus. */
-fun Modifier.selectionBrackets(color: Color, arm: Dp = 10.dp, stroke: Dp = 2.dp): Modifier = drawWithContent {
-    drawContent()
-    val a = arm.toPx()
+/** Four blue corner brackets around a selected item, like the cursor on the DS menus. */
+fun Modifier.selectionBrackets(
+    color: Color = CursorBlue,
+    arm: Dp = 14.dp,
+    stroke: Dp = 3.dp,
+    inset: Dp = 3.dp,
+): Modifier = drawWithCache {
     val s = stroke.toPx()
-    val half = s / 2
-    val w = size.width
-    val h = size.height
-    drawLine(color, Offset(half, half), Offset(a, half), strokeWidth = s)
-    drawLine(color, Offset(half, half), Offset(half, a), strokeWidth = s)
-    drawLine(color, Offset(w - half, half), Offset(w - a, half), strokeWidth = s)
-    drawLine(color, Offset(w - half, half), Offset(w - half, a), strokeWidth = s)
-    drawLine(color, Offset(half, h - half), Offset(a, h - half), strokeWidth = s)
-    drawLine(color, Offset(half, h - half), Offset(half, h - a), strokeWidth = s)
-    drawLine(color, Offset(w - half, h - half), Offset(w - a, h - half), strokeWidth = s)
-    drawLine(color, Offset(w - half, h - half), Offset(w - half, h - a), strokeWidth = s)
+    val a = arm.toPx()
+    val i = inset.toPx() + s / 2
+    val l = i
+    val t = i
+    val r = size.width - i
+    val b = size.height - i
+    val path = Path().apply {
+        moveTo(l, t + a); lineTo(l, t); lineTo(l + a, t)
+        moveTo(r - a, t); lineTo(r, t); lineTo(r, t + a)
+        moveTo(r, b - a); lineTo(r, b); lineTo(r - a, b)
+        moveTo(l + a, b); lineTo(l, b); lineTo(l, b - a)
+    }
+    onDrawWithContent {
+        drawContent()
+        drawPath(path, color, style = Stroke(width = s))
+    }
 }
 
 /** A folder or a file, drawn in outline like the DS icons. Drawn here so it needs no icon set. */

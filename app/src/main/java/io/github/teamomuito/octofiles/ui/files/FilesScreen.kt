@@ -69,10 +69,11 @@ import java.io.File
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.RectangleShape
 import io.github.teamomuito.octofiles.ui.theme.DsGlyph
+import io.github.teamomuito.octofiles.ui.theme.LocalPanel
+import io.github.teamomuito.octofiles.ui.theme.PanelShape
+import io.github.teamomuito.octofiles.ui.theme.panel
 import io.github.teamomuito.octofiles.ui.theme.selectionBrackets
 
 /** Files copied or cut from the browser, waiting for a paste. */
@@ -384,14 +385,15 @@ private fun FileRow(
     onMore: () -> Unit,
 ) {
     val context = LocalContext.current
-    val rim = MaterialTheme.colorScheme.outlineVariant
+    val panel = LocalPanel.current
+    // each file is its own boxed panel, like the clips on the DS chat room; the selected one gets the cursor
     Row(
         Modifier
             .fillMaxWidth()
-            .background(if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+            .panel(PanelShape, panel, if (selected) MaterialTheme.colorScheme.primaryContainer else null)
             .combinedClickable(onClick = onOpen, onLongClick = onSelect)
-            .then(if (selected) Modifier.selectionBrackets(MaterialTheme.colorScheme.onSurface) else Modifier)
-            .drawBehind { drawLine(rim, Offset(0f, size.height), Offset(size.width, size.height), strokeWidth = 1.dp.toPx()) }
+            .then(if (selected) Modifier.selectionBrackets() else Modifier)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

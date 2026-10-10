@@ -60,6 +60,7 @@ import io.github.teamomuito.octofiles.data.TidySettings
 import io.github.teamomuito.octofiles.ui.theme.LocalPanel
 import io.github.teamomuito.octofiles.ui.theme.Pastel
 import io.github.teamomuito.octofiles.ui.theme.bottomSpace
+import io.github.teamomuito.octofiles.ui.theme.PanelShape
 import io.github.teamomuito.octofiles.ui.theme.panel
 
 @Composable
@@ -170,7 +171,7 @@ private fun SearchBox(query: String, onChange: (String) -> Unit) {
             { IconButton(onClick = { onChange("") }) { Icon(Icons.Rounded.Close, contentDescription = "clear") } }
         },
         singleLine = true,
-        shape = RectangleShape,
+        shape = PanelShape,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }),
         colors = OutlinedTextFieldDefaults.colors(
@@ -197,7 +198,7 @@ private fun FilterRow(selected: Filter, showSoon: Boolean, onPick: (Filter) -> U
                 selected = f == selected,
                 onClick = { onPick(f) },
                 label = { Text(f.label) },
-                shape = RectangleShape,
+                shape = PanelShape,
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = panel.fill,
                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
@@ -264,7 +265,7 @@ private fun ResultList(shots: List<Shot>, onOpen: (Shot) -> Unit) {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .panel(RectangleShape, panel)
+                    .panel(PanelShape, panel)
                     .clickable { onOpen(shot) }
                     .padding(10.dp),
             ) {

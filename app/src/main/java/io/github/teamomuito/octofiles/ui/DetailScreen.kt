@@ -51,6 +51,7 @@ import io.github.teamomuito.octofiles.data.TidySettings
 import io.github.teamomuito.octofiles.ui.theme.PanelCard
 import io.github.teamomuito.octofiles.ui.theme.GridBackground
 import io.github.teamomuito.octofiles.ui.theme.LocalPanel
+import io.github.teamomuito.octofiles.ui.theme.PanelShape
 
 @Composable
 fun DetailScreen(id: Long, vm: MainViewModel, onBack: () -> Unit, onTrash: (Shot) -> Unit) {
@@ -127,7 +128,7 @@ private fun DetailBody(detail: Detail, tidy: TidySettings, vm: MainViewModel, on
         }
     }
     PanelCard(
-        shape = RectangleShape,
+        shape = PanelShape,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp),
@@ -159,7 +160,7 @@ private fun TemporaryCard(shot: Shot, tidy: TidySettings, onKeep: (Boolean) -> U
         }
     }
     PanelCard(
-        shape = RectangleShape,
+        shape = PanelShape,
         tint = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = if (LocalPanel.current.dark) 0.45f else 0.7f),
         modifier = Modifier
             .fillMaxWidth()
