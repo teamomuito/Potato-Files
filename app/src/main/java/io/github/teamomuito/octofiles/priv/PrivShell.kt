@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.IBinder
-import android.os.UserHandle
+import android.os.Process
 import io.github.teamomuito.octofiles.BuildConfig
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +25,7 @@ object PrivShell {
     const val MANAGER_PACKAGE = "moe.shizuku.privileged.api"
     private const val REQUEST_CODE = 7301
     private const val BIND_TIMEOUT_MS = 10_000L
+    private const val USER_UID_BLOCK = 100_000
 
     private val lock = Mutex()
     @Volatile private var service: IShellService? = null
@@ -70,8 +71,9 @@ object PrivShell {
 
     /** Every package on the phone, including ones kept as data after an uninstall. Fails rather than guessing with an empty list. */
     suspend fun installed(context: Context): Set<String> {
-        // scoped to the user this app runs as, since that's whose storage is being scanned
-        val out = exec(context, "pm list packages -u --user ${UserHandle.myUserId()}")
+        // scoped to the user this app runs as, since that's whose storage is being scanned.
+        // Android gives every user its own block of uids, so the user id is the uid divided by the block size.
+        val out = exec(context, "pm list packages -u --user ${Process.myUid() / USER_UID_BLOCK}")
         val names = ShellText.parsePackages(out.text)
         check(out.ok && names.isNotEmpty()) { "shizuku couldn't list the installed apps" }
         return names
