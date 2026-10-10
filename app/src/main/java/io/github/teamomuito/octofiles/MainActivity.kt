@@ -4,6 +4,8 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
 import io.github.teamomuito.octofiles.ui.MainViewModel
@@ -20,7 +22,8 @@ class MainActivity : FragmentActivity() {
         vm = ViewModelProvider(this)[MainViewModel::class.java]
         if (savedInstanceState == null && intent?.action == ACTION_TIDY) vm.tidyAsked.value = true
         setContent {
-            OctoTheme {
+            val theme by vm.theme.collectAsStateWithLifecycle()
+            OctoTheme(theme) {
                 PotatoApp(vm)
             }
         }

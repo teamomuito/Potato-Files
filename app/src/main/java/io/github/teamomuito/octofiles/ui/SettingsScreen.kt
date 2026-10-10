@@ -33,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
@@ -49,6 +50,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.teamomuito.octofiles.data.ThemeChoice
 import io.github.teamomuito.octofiles.data.Updates
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -65,6 +67,7 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
     val silent by vm.canTidySilently.collectAsStateWithLifecycle()
     val canNotify by vm.canNotify.collectAsStateWithLifecycle()
     val skipTrash by vm.skipTrash.collectAsStateWithLifecycle()
+    val theme by vm.theme.collectAsStateWithLifecycle()
     val askNotify = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refresh() }
     var rereadStarted by remember { mutableStateOf(false) }
     var update by remember { mutableStateOf<UpdateState>(UpdateState.Idle) }
@@ -85,6 +88,19 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                     Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "back")
                 }
                 Text("settings", style = MaterialTheme.typography.headlineSmall)
+            }
+
+            Section {
+                Text("theme", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "match your phone, or pick light or dark for potato whatever the phone is doing.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                for (choice in ThemeChoice.entries) {
+                    RadioRow(choice.label, selected = theme == choice) { vm.setTheme(choice) }
+                }
             }
 
             Section {
@@ -322,6 +338,19 @@ private fun Section(content: @Composable ColumnScope.() -> Unit) {
             .padding(horizontal = 16.dp, vertical = 6.dp),
     ) {
         Column(Modifier.padding(18.dp), content = content)
+    }
+}
+
+@Composable
+private fun RadioRow(label: String, selected: Boolean, onSelect: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onSelect),
+    ) {
+        RadioButton(selected = selected, onClick = null)
+        Text(label, style = MaterialTheme.typography.bodyMedium)
     }
 }
 

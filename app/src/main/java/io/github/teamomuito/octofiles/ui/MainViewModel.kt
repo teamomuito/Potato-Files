@@ -13,6 +13,7 @@ import io.github.teamomuito.octofiles.data.SearchQuery
 import io.github.teamomuito.octofiles.data.Shot
 import io.github.teamomuito.octofiles.data.ShotDb
 import io.github.teamomuito.octofiles.data.TidyPlan
+import io.github.teamomuito.octofiles.data.ThemeChoice
 import io.github.teamomuito.octofiles.data.TidySettings
 import io.github.teamomuito.octofiles.work.Jobs
 import kotlinx.coroutines.Dispatchers
@@ -54,6 +55,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val canTidySilently = MutableStateFlow(Access.canTidySilently(app))
     val canNotify = MutableStateFlow(Access.canNotify(app))
     val tidy: StateFlow<TidySettings> = Prefs.tidy
+    val theme: StateFlow<ThemeChoice> = Prefs.theme
+
+    fun setTheme(choice: ThemeChoice) = Prefs.setTheme(choice)
 
     /** Set when someone taps the tidy-up notification. */
     val tidyAsked = MutableStateFlow(false)

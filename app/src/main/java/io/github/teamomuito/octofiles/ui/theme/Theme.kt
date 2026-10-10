@@ -1,5 +1,6 @@
 package io.github.teamomuito.octofiles.ui.theme
 
+import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material3.LocalContentColor
@@ -10,6 +11,9 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -19,6 +23,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.teamomuito.octofiles.R
+import io.github.teamomuito.octofiles.data.ThemeChoice
 
 // the DS menu palette, sampled from pictoclip: paper grid, slate header, pale footer, blue cursor
 private val Light = lightColorScheme(
@@ -136,9 +141,22 @@ private val OctoShapes = Shapes(
 )
 
 @Composable
-fun OctoTheme(content: @Composable () -> Unit) {
-    val dark = isSystemInDarkTheme()
+fun OctoTheme(choice: ThemeChoice = ThemeChoice.SYSTEM, content: @Composable () -> Unit) {
+    val dark = when (choice) {
+        ThemeChoice.SYSTEM -> isSystemInDarkTheme()
+        ThemeChoice.LIGHT -> false
+        ThemeChoice.DARK -> true
+    }
     val colors = if (dark) Dark else Light
+    // the status and navigation bar icons follow the chosen theme, not the phone's
+    val view = LocalView.current
+    SideEffect {
+        val window = (view.context as? Activity)?.window ?: return@SideEffect
+        WindowCompat.getInsetsController(window, view).apply {
+            isAppearanceLightStatusBars = !dark
+            isAppearanceLightNavigationBars = !dark
+        }
+    }
     MaterialTheme(colorScheme = colors, typography = OctoType, shapes = OctoShapes) {
         // text drawn straight on the background needs a color too, not just text inside cards
         CompositionLocalProvider(

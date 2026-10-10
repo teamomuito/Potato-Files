@@ -23,6 +23,9 @@ data class TidySettings(
 /** Running total of what swipe cleanup has deleted. */
 data class Freed(val bytes: Long = 0, val items: Int = 0)
 
+/** Which theme potato wears: the phone's, or one picked for the app. */
+enum class ThemeChoice(val label: String) { SYSTEM("match my phone"), LIGHT("light"), DARK("dark") }
+
 object Prefs {
     private lateinit var prefs: SharedPreferences
     private val _tidy = MutableStateFlow(TidySettings())
@@ -38,6 +41,10 @@ object Prefs {
     /** Swipe deletes skip the trash and free the space right away. */
     private val _skipTrash = MutableStateFlow(false)
     val skipTrash: StateFlow<Boolean> = _skipTrash
+
+    /** Light, dark, or whatever the phone is set to. */
+    private val _theme = MutableStateFlow(ThemeChoice.SYSTEM)
+    val theme: StateFlow<ThemeChoice> = _theme
 
     /** Ids of the built-in system cleaner filters the person has turned off. */
     private val _systemOff = MutableStateFlow<Set<String>>(emptySet())
@@ -60,6 +67,7 @@ object Prefs {
         _freed.value = Freed(prefs.getLong("freedBytes", 0), prefs.getInt("freedItems", 0))
         _skipTrash.value = prefs.getBoolean("skipTrash", false)
         _cleaned.value = prefs.getLong("cleanedBytes", 0)
+        _theme.value = ThemeChoice.entries.firstOrNull { it.name == prefs.getString("theme", null) } ?: ThemeChoice.SYSTEM
         _systemOff.value = prefs.getStringSet("systemOff", emptySet()).orEmpty().toSet()
         _systemCustom.value = CustomFilter.decodeAll(prefs.getString("systemCustom", "").orEmpty())
     }
@@ -94,6 +102,12 @@ object Prefs {
     fun setCustomFilters(next: List<CustomFilter>) {
         _systemCustom.value = next
         prefs.edit().putString("systemCustom", CustomFilter.encodeAll(next)).apply()
+    }
+
+    @Synchronized
+    fun setTheme(choice: ThemeChoice) {
+        _theme.value = choice
+        prefs.edit().putString("theme", choice.name).apply()
     }
 
     fun updateTidy(change: (TidySettings) -> TidySettings) {
