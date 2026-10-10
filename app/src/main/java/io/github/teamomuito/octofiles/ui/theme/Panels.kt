@@ -37,10 +37,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.border
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -105,18 +106,16 @@ val CursorBlue = Color(0xFF3E6DB0)
  * and right, like the DS buttons. [tint] goes over the fill, so the panel stays solid underneath.
  */
 fun Modifier.panel(shape: Shape, panel: Panel, tint: Color? = null): Modifier =
-    clip(shape).drawWithCache {
-        val edge = EDGE.toPx()
-        val outline = shape.createOutline(size, layoutDirection, this)
-        val inner = Rect(edge, edge, size.width - edge, size.height - edge)
-        onDrawBehind {
-            drawOutline(outline, panel.rim)
-            drawRect(panel.fill, inner.topLeft, inner.size)
-            if (tint != null) drawRect(tint, inner.topLeft, inner.size)
-            drawRect(panel.shadow, Offset(inner.left, inner.bottom - edge), Size(inner.width, edge))
-            drawRect(panel.shadow, Offset(inner.right - edge, inner.top), Size(edge, inner.height))
+    clip(shape)
+        .background(panel.fill)
+        .then(if (tint != null) Modifier.background(tint) else Modifier)
+        .drawBehind {
+            // the strips sit just inside the rim, so the border covers their outer edge
+            val edge = EDGE.toPx()
+            drawRect(panel.shadow, Offset(edge, size.height - 2 * edge), Size(size.width - 2 * edge, edge))
+            drawRect(panel.shadow, Offset(size.width - 2 * edge, edge), Size(edge, size.height - 2 * edge))
         }
-    }
+        .border(EDGE, panel.rim, shape)
 
 /** Clickable that dips a little while pressed. */
 @Composable
