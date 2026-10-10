@@ -51,6 +51,15 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- shizuku, for the deeper clean without root. Only used when you open those sections. -->
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:enabled="true"
+            android:exported="true"
+            android:multiprocess="false"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
         <!-- taps through each app's cache page during the one-by-one clean. Off until you turn it on. -->
         <service
             android:name=".data.ClearCacheService"

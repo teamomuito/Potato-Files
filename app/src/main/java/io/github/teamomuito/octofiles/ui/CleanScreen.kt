@@ -252,6 +252,10 @@ fun CleanScreen(vm: CleanViewModel, onSettings: () -> Unit) {
                     ScanState.Idle -> Unit
                 }
 
+                item(key = "shizuku") {
+                    ShizukuSection(vm, open = expanded, onToggle = { toggleOpen(it) })
+                }
+
                 if (usage && appList != null) {
                     item(key = "unused") {
                         UnusedAppsCard(
@@ -373,14 +377,14 @@ private fun Scanning(files: Int) {
 }
 
 @Composable
-private fun Section(content: @Composable () -> Unit) {
+internal fun Section(content: @Composable () -> Unit) {
     PanelCard(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) { content() }
     }
 }
 
 @Composable
-private fun SectionHeader(title: String, body: String, size: String, open: Boolean, onOpen: () -> Unit, leading: @Composable () -> Unit = {}) {
+internal fun SectionHeader(title: String, body: String, size: String, open: Boolean, onOpen: () -> Unit, leading: @Composable () -> Unit = {}) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier

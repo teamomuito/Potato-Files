@@ -66,6 +66,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        aidl = true
     }
 
     packaging {
@@ -95,6 +96,9 @@ dependencies {
     implementation(libs.mlkit.text.recognition)
     implementation(libs.mlkit.barcode.scanning)
     implementation(libs.androidx.biometric)
+    // shizuku: runs shell commands with adb's rights for the leftovers and deep cache sections. optional, no root.
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
 
     testImplementation(libs.junit)
 }

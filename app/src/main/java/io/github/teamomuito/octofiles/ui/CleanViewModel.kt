@@ -14,6 +14,13 @@ import io.github.teamomuito.octofiles.data.JunkKind
 import io.github.teamomuito.octofiles.data.JunkReport
 import io.github.teamomuito.octofiles.data.JunkRules
 import io.github.teamomuito.octofiles.data.Prefs
+import io.github.teamomuito.octofiles.files.Fs
+import io.github.teamomuito.octofiles.priv.Corpse
+import io.github.teamomuito.octofiles.priv.Corpses
+import io.github.teamomuito.octofiles.priv.DeepCache
+import io.github.teamomuito.octofiles.priv.ExternalCache
+import io.github.teamomuito.octofiles.priv.PrivShell
+import io.github.teamomuito.octofiles.priv.ShizukuState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +33,14 @@ sealed interface ScanState {
     data object Idle : ScanState
     data class Scanning(val files: Int) : ScanState
     data class Done(val report: JunkReport) : ScanState
+}
+
+/** A look through something that needs Shizuku: not started, working, what it found, or why it couldn't look. */
+sealed interface PrivScan<out T> {
+    data object Idle : PrivScan<Nothing>
+    data object Working : PrivScan<Nothing>
+    data class Done<T>(val items: List<T>) : PrivScan<T>
+    data class Failed(val reason: String) : PrivScan<Nothing>
 }
 
 private const val GUIDED_MIN_BYTES = 5L * 1024 * 1024
@@ -46,10 +61,20 @@ class CleanViewModel(app: Application) : AndroidViewModel(app) {
 
     private var scanJob: Job? = null
 
+    // shizuku: the deeper clean, without root. Only looked at when one of its sections is opened.
+    val shizuku = MutableStateFlow(ShizukuState.MISSING)
+    val corpses = MutableStateFlow<PrivScan<Corpse>>(PrivScan.Idle)
+    val corpsePicked = MutableStateFlow<Set<String>>(emptySet())
+    val externalCaches = MutableStateFlow<PrivScan<ExternalCache>>(PrivScan.Idle)
+    val cachePicked = MutableStateFlow<Set<String>>(emptySet())
+    val privBusy = MutableStateFlow(false)
+    private val stopShizukuListener = PrivShell.listen { refreshShizuku() }
+
     fun refresh() {
         val app = getApplication<Application>()
         hasAllFiles.value = Access.hasAllFiles()
         hasUsage.value = Access.hasUsageAccess(app)
+        refreshShizuku()
         if (hasAllFiles.value && scan.value == ScanState.Idle) scan()
         if (hasUsage.value && apps.value == null) loadApps()
     }
@@ -144,5 +169,112 @@ class CleanViewModel(app: Application) : AndroidViewModel(app) {
         if (!Apps.isInstalled(getApplication(), pkg)) {
             apps.update { list -> list?.filter { it.pkg != pkg } }
         }
+    }
+
+    fun refreshShizuku() {
+        shizuku.value = PrivShell.state()
+    }
+
+    fun askShizuku() = PrivShell.askPermission()
+
+    fun scanCorpses() {
+        if (shizuku.value != ShizukuState.READY || corpses.value == PrivScan.Working) return
+        corpses.value = PrivScan.Working
+        viewModelScope.launch {
+            corpses.value = runCatching { Corpses.scan(getApplication(), storageRoot()) }.fold(
+                onSuccess = { found ->
+                    // app data starts ticked, the rest is for the person to choose
+                    corpsePicked.value = found.filter { it.kind.ticked }.mapTo(HashSet()) { it.path }
+                    PrivScan.Done(found)
+                },
+                onFailure = { PrivScan.Failed(reasonOf(it)) },
+            )
+        }
+    }
+
+    fun toggleCorpse(corpse: Corpse) = corpsePicked.update { if (corpse.path in it) it - corpse.path else it + corpse.path }
+
+    fun setCorpses(items: List<Corpse>, on: Boolean) = corpsePicked.update { current ->
+        val paths = items.map { it.path }
+        if (on) current + paths else current - paths.toSet()
+    }
+
+    /** Removes the ticked leftovers, adds them to the running total, then looks again. */
+    suspend fun removeCorpses(): Result<Long> {
+        val found = (corpses.value as? PrivScan.Done<Corpse>)?.items.orEmpty()
+        val picked = found.filter { it.path in corpsePicked.value }
+        if (picked.isEmpty()) return Result.success(0L)
+        privBusy.value = true
+        val result = runCatching { Corpses.remove(getApplication(), storageRoot(), picked) }
+        result.onSuccess { Prefs.addCleaned(it) }
+        privBusy.value = false
+        scanCorpses()
+        return result
+    }
+
+    fun scanCaches() {
+        if (shizuku.value != ShizukuState.READY || externalCaches.value == PrivScan.Working) return
+        externalCaches.value = PrivScan.Working
+        viewModelScope.launch {
+            externalCaches.value = runCatching {
+                withContext(Dispatchers.IO) { DeepCache.scan(getApplication(), storageRoot()).map { labelled(it) } }
+            }.fold(
+                onSuccess = { found ->
+                    // caches are safe to clear, so they all start ticked
+                    cachePicked.value = found.mapTo(HashSet()) { it.path }
+                    PrivScan.Done(found)
+                },
+                onFailure = { PrivScan.Failed(reasonOf(it)) },
+            )
+        }
+    }
+
+    fun toggleCache(cache: ExternalCache) = cachePicked.update { if (cache.path in it) it - cache.path else it + cache.path }
+
+    fun setCaches(items: List<ExternalCache>, on: Boolean) = cachePicked.update { current ->
+        val paths = items.map { it.path }
+        if (on) current + paths else current - paths.toSet()
+    }
+
+    /** Clears the ticked app cache folders. Returns the bytes freed. */
+    suspend fun clearPickedCaches(): Result<Long> {
+        val found = (externalCaches.value as? PrivScan.Done<ExternalCache>)?.items.orEmpty()
+        val picked = found.filter { it.path in cachePicked.value }
+        if (picked.isEmpty()) return Result.success(0L)
+        privBusy.value = true
+        val result = runCatching { DeepCache.clear(getApplication(), picked, storageRoot()) }
+        result.onSuccess { Prefs.addCleaned(it) }
+        privBusy.value = false
+        scanCaches()
+        return result
+    }
+
+    /** Android's own trim of every app's cache, asked for through Shizuku. Returns what the cache total dropped by. */
+    suspend fun trimAllCaches(): Result<Long> {
+        val before = apps.value.orEmpty().sumOf { it.cacheBytes }
+        privBusy.value = true
+        val result = runCatching {
+            val out = PrivShell.trimCaches(getApplication())
+            check(out.ok) { out.text.trim().ifEmpty { "shizuku couldn't trim the caches" } }
+            recountCaches(before)
+        }
+        privBusy.value = false
+        scanCaches()
+        return result
+    }
+
+    override fun onCleared() {
+        stopShizukuListener()
+    }
+
+    private fun storageRoot(): String = Fs.storage.absolutePath
+
+    private fun reasonOf(e: Throwable): String = e.message ?: "shizuku didn't answer"
+
+    @Suppress("DEPRECATION")
+    private fun labelled(cache: ExternalCache): ExternalCache {
+        val pm = getApplication<Application>().packageManager
+        val label = runCatching { pm.getApplicationInfo(cache.pkg, 0).loadLabel(pm).toString() }.getOrDefault(cache.pkg)
+        return cache.copy(label = label)
     }
 }
